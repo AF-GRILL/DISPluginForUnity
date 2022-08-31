@@ -95,19 +95,20 @@ The PDU Sender script has the following settings:
     - Add DIS Entity to Map
     - Remove DIS Entity from Map
 
-# DIS Component Script
+# DIS Receive Component Script
 
-- The DIS Component script is responsible for handling all DIS functionality and DIS PDU updates for its associated DIS Entity.
+- The DIS Receive Component script is responsible for handling all receive DIS functionality and DIS PDU updates for its associated DIS Entity.
 - Handles dead reckoning and ground clamping updates.
 - Contains various DIS related variables.
 - Notable functions:
     - Ground Clamping
-        - Can be overriden in blueprints for a custom implementation.
+		- Default implemented behavior line traces toward the earth using NED vectors. Places the entity on the hit location on the ground.
+        - Can be overriden for a custom implementation.
 - Contains event bindings for:
     - Receiving each type of DIS Entity PDU currently implemented.
     - Dead reckoning update
 
-![DISComponent](Resources/ReadMeImages/DISComponentScript.png)
+![DISReceiveComponent](Resources/ReadMeImages/DISReceiveComponentScript.png)
 	
 - Has variables for:
     - Most Recent Entity State PDU
@@ -116,24 +117,20 @@ The PDU Sender script has the following settings:
     - Latest Entity State PDU Timestamp
     - Spawned From Network
         - Whether or not this entity was spawned from the network.
-    - DIS Timeout
-		- How long to wait in seconds after an Entity State PDU is received before deleting. Gets refreshed after an Entity State PDU is received.
     - Entity Type
 		- This record specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
-        - Setting this in the component is mainly used for sending DIS data.
         - This value gets set when an Entity State PDU or Entity State Update PDU is received for the associated entity.
     - Entity ID
 		- This record specifies the site ID, application ID, and entity ID fields. They combine to form a unique identifier of the entity in the exercise.
-        - Setting this in the component is mainly used for sending DIS data.
         - This value gets set when an Entity State PDU or Entity State Update PDU is received for the associated entity.
     - Entity Force ID
 		- This field distinguishes the different teams or sides in a DIS exercise.
-        - Setting this in the component is mainly used for sending DIS data.
         - This value gets set when an Entity State PDU or Entity State Update PDU is received for the associated entity.
     - Entity Marking
 		- This record is used to specify the friendly name of the entity to be interpreted for display.
-        - Setting this in the component is mainly used for sending DIS data.
         - This value gets set when an Entity State PDU or Entity State Update PDU is received for the associated entity.
+    - DIS Timeout
+		- How long to wait in seconds after an Entity State PDU is received before deleting. Gets refreshed after an Entity State PDU is received.
 	- DIS Culling Mode
 		- Culls DIS packets based on settings
 			- Options:
@@ -161,8 +158,77 @@ The PDU Sender script has the following settings:
     - Ground Clamping Collision Channel
         - The collision channel that should be used for ground clamping.
 
+# DIS Send Component Script
+
+- The DIS Send Component handles basic sending DIS functionality its associated DIS Entity.
+- Contains various DIS related variables.
+- Notable functions:
+	- Form Entity State PDU
+		- Uses all known information to form an ESPDU for the associated DIS Entity.
+    - Send Entity State PDU
+		- Default implemented behavior tries to send out an Entity State or Entity State Update PDU based on Entity State PDU Sending Mode variable.
+		- Called on update as thresholds need consistently checked.
+        - Can be overriden for a custom implementation.
+    - Set Entity Appearance
+		- Used to update the entity appearance during runtime.
+    - Set Entity Capabilities
+		- Used to update the entity capabilities during runtime.
+	- Set Dead Reckoning Algorithm
+		- Used to update the dead reckoning algorithm during runtime.
+	
+![DISSendComponent](Resources/ReadMeImages/DISSendComponentScript.png)
+
+- Has variables for:
+    - Most Recent Entity State PDU
+    - Dead Reckoning Entity State PDU
+        - This is an Entity State PDU whose information has been updated with the most recent Dead Reckoning information.
+    - Entity Type
+		- This record specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
+        - This value should be set on the component and will be used when sending automatic PDU updates.
+    - Entity ID
+		- This record specifies the site ID, application ID, and entity ID fields. They combine to form a unique identifier of the entity in the exercise.
+        - This value should be set on the component and will be used when sending automatic PDU updates.
+    - Entity Force ID
+		- This field distinguishes the different teams or sides in a DIS exercise.
+        - This value should be set on the component and will be used when sending automatic PDU updates.
+    - Entity Marking
+		- This record is used to specify the friendly name of the entity to be interpreted for display.
+        - This value should be set on the component and will be used when sending automatic PDU updates.
+    - DIS Heartbeat Seconds
+		- How often a new PDU update should be sent out.
+		- Utilized if Dead Reckoning Thresholds are not clipped.
+	- Entity State PDU Sending Mode
+		- Mode that the send component should be in.
+			- Options:
+				- None
+					- Don't send any automatic Entity State or Entity State Update PDU updates.
+				- Entity State PDU
+					- Automatically send out Entity State PDU updates.
+					- Will send out a new PDU when a Dead Reckoning Threshold is clipped, the DIS heartbeat expires, when the Dead Reckoning algoritm is changed, when the entity Capabilities are changed, when the entity Appearance is changed, or when the entity expires in the world.
+				- Entity State Update PDU
+					- Automatically send out Entity State Update PDU updates.
+					- Will send out a new PDU when a Dead Reckoning Threshold is clipped, the DIS heartbeat expires, when the entity Appearance is changed, or when the entity expires in the world.
+    - Entity Appearance
+        - Represented as an int-32 field. Specifies the dynamic changes to the entities appearance attributes.
+        - Refer to DIS Standard IEEE 1278.1 document for a breakdown.
+    - Entity Capabilities
+        - Represented as an int-32 field. A collection of fields which describe the capabilities of the Entity.
+        - Refer to DIS Standard IEEE 1278.1 document for a breakdown.
+	- Dead Reckoning Algorithm
+		- The dead reckoning algorithm to use.
+    - Dead Reckoning Position Threshold Meters
+        - The position threshold in meters to use for dead reckoning. If the dead reckoning position deviates more than this value away from the actual position in any axis, a new Entity State PDU will be sent.
+    - Dead Reckoning Orientation Threshold Degrees
+        - The orientation threshold in degrees to use for dead reckoning. If the dead reckoning orientation deviates more than this value away from the actual orientation, a new Entity State PDU will be sent.
+
 # DIS Conversion Library
 
 - Contains static functions for converting between various geospatial coordinates.
 
 ![ConversionsFunctions](Resources/ReadMeImages/ConversionsFunctions.png)
+
+# Dead Reckoning Library
+
+- Contains functions for performing Dead Reckoning
+
+![DeadReckoningLibrary](Resources/ReadMeImages/DeadReckoningLibrary.png)

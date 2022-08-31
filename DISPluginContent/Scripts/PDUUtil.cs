@@ -52,6 +52,22 @@ public static class PDUUtil
         markingString = markingString.Substring(0, newLineIndex);
         return markingString;
     }
+    public static Marking getStringAsMarking(string stringToConvert)
+    {
+        Marking marking = new Marking();
+
+        //Set character set to ASCII and encode appropriately
+        marking.CharacterSet = 1;
+        byte[] stringBytes = Encoding.ASCII.GetBytes(stringToConvert);
+
+        int count = (stringBytes.Length < 11) ? stringBytes.Length : 11;
+        for(int i = 0; i < count; i++)
+        {
+            marking.Characters[i] = stringBytes[i];
+        }
+
+        return marking;
+    }
 
     public static string getEntityStatePDUMarkingSAE(EntityStatePdu entityStatePdu)
     {

@@ -65,13 +65,19 @@ public class PDUReceiver : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Check to see if any PDUs have been received since the last tick
-        pduProcessor.CheckForUpdate();
+        if (pduProcessor != null)
+        {
+            //Check to see if any PDUs have been received since the last tick
+            pduProcessor.CheckForUpdate();
+        }
     }
 
     private void OnApplicationQuit()
     {
-        receiver.stopReceiving();
+        if (receiver != null)
+        {
+            receiver.stopReceiving();
+        }
     }
 
     public void startUDPReceiver()
@@ -99,11 +105,11 @@ public class PDUReceiver : MonoBehaviour
 
                 if (obj != null)
                 {
-                    DISComponent disComponentScript = obj.GetComponent<DISComponent>();
+                    DISReceiveComponent DISReceiveComponentScript = obj.GetComponent<DISReceiveComponent>();
 
-                    if (disComponentScript != null)
+                    if (DISReceiveComponentScript != null)
                     {
-                        disComponentScript.HandleEntityStatePDU(PDUPacketToProcess as EntityStatePdu);
+                        DISReceiveComponentScript.HandleEntityStatePDU(PDUPacketToProcess as EntityStatePdu);
                     }
                     else
                     {
@@ -116,31 +122,31 @@ public class PDUReceiver : MonoBehaviour
                 EntityStateUpdatePdu entityStateUpdatePdu = (EntityStateUpdatePdu)PDUPacketToProcess;
 
                 // NOTE: Entity State Update PDUs do not contain an Entity Type, so we cannot spawn an entity from one
-                DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(entityStateUpdatePdu.EntityID);
+                DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(entityStateUpdatePdu.EntityID);
 
-                if (disComponent != null)
+                if (disReceiveComponent != null)
                 {
-                    disComponent.HandleEntityStateUpdatePDU(entityStateUpdatePdu);
+                    disReceiveComponent.HandleEntityStateUpdatePDU(entityStateUpdatePdu);
                 }
             }
             else if (PDUPacketToProcess is FirePdu)
             {
                 FirePdu firePdu = (FirePdu)PDUPacketToProcess;
-                DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(firePdu.FiringEntityID);
+                DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(firePdu.FiringEntityID);
 
-                if (disComponent != null)
+                if (disReceiveComponent != null)
                 {
-                    disComponent.HandleFirePDU(firePdu);
+                    disReceiveComponent.HandleFirePDU(firePdu);
                 }
             }
             else if (PDUPacketToProcess is DetonationPdu)
             {
                 DetonationPdu detonationPdu = (DetonationPdu)PDUPacketToProcess;
-                DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(detonationPdu.MunitionID);
+                DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(detonationPdu.MunitionID);
 
-                if (disComponent != null)
+                if (disReceiveComponent != null)
                 {
-                    disComponent.HandleDetonationPDU(detonationPdu);
+                    disReceiveComponent.HandleDetonationPDU(detonationPdu);
                 }
             }
             else if (PDUPacketToProcess is RemoveEntityPdu)
@@ -149,11 +155,11 @@ public class PDUReceiver : MonoBehaviour
                 //Verify we are the appropriate sim to handle this PDU
                 if (removeEntityPdu.ReceivingEntityID.Site == disManagerScript.SiteID && removeEntityPdu.ReceivingEntityID.Application == disManagerScript.ApplicationID)
                 {
-                    DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(removeEntityPdu.ReceivingEntityID);
+                    DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(removeEntityPdu.ReceivingEntityID);
 
-                    if (disComponent != null)
+                    if (disReceiveComponent != null)
                     {
-                        disComponent.HandleRemoveEntityPDU(removeEntityPdu);
+                        disReceiveComponent.HandleRemoveEntityPDU(removeEntityPdu);
                     }
                 }
             }
@@ -163,11 +169,11 @@ public class PDUReceiver : MonoBehaviour
                 //Verify we are the appropriate sim to handle this PDU
                 if (startResumePdu.ReceivingEntityID.Site == disManagerScript.SiteID && startResumePdu.ReceivingEntityID.Application == disManagerScript.ApplicationID)
                 {
-                    DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(startResumePdu.ReceivingEntityID);
+                    DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(startResumePdu.ReceivingEntityID);
 
-                    if (disComponent != null)
+                    if (disReceiveComponent != null)
                     {
-                        disComponent.HandleStartResumePDU(startResumePdu);
+                        disReceiveComponent.HandleStartResumePDU(startResumePdu);
                     }
                 }
             }
@@ -177,11 +183,11 @@ public class PDUReceiver : MonoBehaviour
                 //Verify we are the appropriate sim to handle this PDU
                 if (stopFreezePdu.ReceivingEntityID.Site == disManagerScript.SiteID && stopFreezePdu.ReceivingEntityID.Application == disManagerScript.ApplicationID)
                 {
-                    DISComponent disComponent = disManagerScript.GetAssociatedDISComponent(stopFreezePdu.ReceivingEntityID);
+                    DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(stopFreezePdu.ReceivingEntityID);
 
-                    if (disComponent != null)
+                    if (disReceiveComponent != null)
                     {
-                        disComponent.HandleStopFreezePDU(stopFreezePdu);
+                        disReceiveComponent.HandleStopFreezePDU(stopFreezePdu);
                     }
                 }
             }

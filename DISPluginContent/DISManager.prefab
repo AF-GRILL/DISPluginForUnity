@@ -62,11 +62,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b5825b6a3122634d87500f2563f8c7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ipAddressString: 10.0.1.123
+  ipAddressString: 0.0.0.0
   port: 5014
   autoConnectAtStart: 1
   useMulticast: 0
-  allowLoopback: 0
+  allowLoopback: 1
   multicastAddress: 224.252.0.1
 --- !u!114 &3424637735621093189
 MonoBehaviour:
@@ -82,6 +82,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxQueueSize: 1024
   connectionType: 0
-  ipAddressString: 0.0.0.0
+  ipAddressString: 10.0.1.123
   port: 5014
   autoConnectAtStart: 1

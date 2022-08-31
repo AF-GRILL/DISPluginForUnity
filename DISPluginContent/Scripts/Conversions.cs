@@ -5,6 +5,27 @@ using UnityEngine;
 
 public class Conversions
 {
+    public static Vector3 UnwindRotation(Vector3 RotationDegrees)
+    {
+        Vector3 unwoundVector = new Vector3(RotationDegrees.x % 360, RotationDegrees.y % 360, RotationDegrees.z % 360);
+
+        //Check each axis. If axis outside -180 to 180 degree range, take shorter path
+        if(RotationDegrees.x <= -180 || RotationDegrees.x >= 180)
+        {
+            unwoundVector.x += (RotationDegrees.x <= -180) ? 360 : -360;
+        }
+        if (RotationDegrees.y <= -180 || RotationDegrees.y >= 180)
+        {
+            unwoundVector.y += (RotationDegrees.y <= -180) ? 360 : -360;
+        }
+        if (RotationDegrees.z <= -180 || RotationDegrees.z >= 180)
+        {
+            unwoundVector.z += (RotationDegrees.z <= -180) ? 360 : -360;
+        }
+
+        return unwoundVector;
+    }
+
     public static dmat4 CreateSkewMatrix4x4(dvec3 nVector)
     {
         return new dmat4(new dvec4(0, nVector.z, -nVector.y, 0),
@@ -158,7 +179,7 @@ public class Conversions
     public static void CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(double headingDegrees, double pitchDegrees, double rollDegrees, double latitudeDegrees, double longitudeDegrees, out double psiDegrees, out double thetaDegrees, out double phiDegrees)
     {
         CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees, out dvec3 northVector, out dvec3 eastVector, out dvec3 downVector);
-        
+
         ApplyHeadingPitchRollToNorthEastDownVector(headingDegrees, pitchDegrees, rollDegrees, northVector, eastVector, downVector, out dvec3 X, out dvec3 Y, out _);
 
         dvec3 X0 = new dvec3(1, 0, 0);

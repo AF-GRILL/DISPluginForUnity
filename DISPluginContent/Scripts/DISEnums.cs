@@ -53,3 +53,24 @@ public enum EDISCullingMode
     CullDeadReckoning,
     CullAll
 };
+
+public enum EEntityStateSendingMode
+{
+    None,
+    EntityStatePDU,
+    EntityStateUpdatePDU
+};
+
+public enum EDeadReckoningAlgorithm
+{
+    Other,
+    Static,
+    FPW,
+    RPW,
+    RVW,
+    FVW,
+    FPB,
+    RPB,
+    RVB,
+    FVB
+}
