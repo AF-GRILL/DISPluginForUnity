@@ -152,16 +152,6 @@ public class DISReceiveComponent : MonoBehaviour
     /// </summary>
     private Vector3 EntityRotationDifference;
 
-    private void Awake()
-    {
-        Debug.Log("Awake: " + SpawnedFromNetwork);
-    }
-
-    private void Start()
-    {
-        Debug.Log("Start: " + SpawnedFromNetwork);
-    }
-
     void HandleDISHeartbeat()
     {
         //Stop the coroutine if one is running
