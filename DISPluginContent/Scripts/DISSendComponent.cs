@@ -306,7 +306,7 @@ public class DISSendComponent : MonoBehaviour
             if ((byte)DeadReckoningAlgorithm < 6)
             {
                 //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
-                Vector3 curLinearVelocity = ConvertUnityLinearVelocityToECEF(curUnityLinearVelocity, curLoc);
+                Vector3 curLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(curUnityLinearVelocity, curLoc);
                 newEntityStatePDU.EntityLinearVelocity = new Vector3Float
                 {
                     X = curLinearVelocity.x,
@@ -314,7 +314,7 @@ public class DISSendComponent : MonoBehaviour
                     Z = curLinearVelocity.z
                 };
 
-                Vector3 prevECEFLinearVelocity = ConvertUnityLinearVelocityToECEF(PreviousUnityLinearVelocity, PreviousUnityLocation);
+                Vector3 prevECEFLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(PreviousUnityLinearVelocity, PreviousUnityLocation);
                 linearAcceleration = new Vector3Float
                 {
                     X = (newEntityStatePDU.EntityLinearVelocity.X - prevECEFLinearVelocity.x) / timeSinceLastCalc,
@@ -334,11 +334,17 @@ public class DISSendComponent : MonoBehaviour
                 };
                 Vector3 prevVelBodySpace = Vector3.Scale(Quaternion.Euler(PreviousUnityRotation) * PreviousUnityLinearVelocity, new Vector3(1, 1, -1));
 
+                //Calculate the centripetal acceleration in body space
+                dvec3 dvecAngularVelocity = new dvec3(angularVelocity.X, angularVelocity.Y, angularVelocity.Z);
+                dmat3 SkewMatrix = Conversions.CreateSkewMatrix(dvecAngularVelocity);
+                dvec3 dvecBodyVelocityVector = new dvec3(newEntityStatePDU.EntityLinearVelocity.X, newEntityStatePDU.EntityLinearVelocity.Y, newEntityStatePDU.EntityLinearVelocity.Z);
+                dvec3 dvecCentripetalAcceleration = (SkewMatrix * dvecBodyVelocityVector);
+
                 linearAcceleration = new Vector3Float
                 {
-                    X = (newEntityStatePDU.EntityLinearVelocity.X - prevVelBodySpace.x) / timeSinceLastCalc,
-                    Y = (newEntityStatePDU.EntityLinearVelocity.Y - prevVelBodySpace.y) / timeSinceLastCalc,
-                    Z = (newEntityStatePDU.EntityLinearVelocity.Z - prevVelBodySpace.z) / timeSinceLastCalc
+                    X = ((newEntityStatePDU.EntityLinearVelocity.X - prevVelBodySpace.x) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.x,
+                    Y = ((newEntityStatePDU.EntityLinearVelocity.Y - prevVelBodySpace.y) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.y,
+                    Z = ((newEntityStatePDU.EntityLinearVelocity.Z - prevVelBodySpace.z) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.z
                 };
             }
 
@@ -469,25 +475,6 @@ public class DISSendComponent : MonoBehaviour
         outsideThreshold = (3 - rotDiffTrace) > OrientationMatrixThresholdDelta;
 
         return outsideThreshold;
-    }
-
-    Vector3 ConvertUnityLinearVelocityToECEF(Vector3 UnityLinearVelocity, Vector3 CurrentLocation)
-    {
-        Vector3 linearVelocity = UnityLinearVelocity;
-
-        // TODO: Implement Unity to/from geospatial conversions
-        //if (IsValid(GeoReferencingSystem))
-        //{
-        //    FLatLonHeightFloat llh;
-        //    FNorthEastDown nedVectors;
-        //    Conversions.CalculateLatLonHeightFromUnrealLocation(CurrentLocation, GeoReferencingSystem, llh);
-        //    Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.Latitude, llh.Longitude, nedVectors);
-
-        //    //Convert the Unreal Engine linear velocity to be in terms of ECEF
-        //    linearVelocity = nedVectors.NorthVector * -linearVelocity.y + nedVectors.EastVector * linearVelocity.x - nedVectors.DownVector * linearVelocity.z;
-        //}
-
-        return linearVelocity;
     }
 
     public virtual bool SendEntityStatePDU()

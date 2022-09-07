@@ -439,6 +439,32 @@ public class Conversions
         CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(glm.Degrees(psiRadians), glm.Degrees(thetaRadians), glm.Degrees(phiRadians), latitudeDegrees, longitudeDegrees, out headingRadians, out pitchRadians, out rollRadians);
     }
 
+
+    /// <summary>
+    /// Converts the given Unreal Engine vector to be in terms of ECEF. Resulting vector will be same magnitude, but in direction of ECEF NED vectors of the given location.
+    /// </summary>
+    /// <param name="UnityVector">The Unity vector to be converted to ECEF coordinates</param>
+    /// <param name="CurrentLocation">The Unreal Engine location that the entity is at</param>
+    /// <returns></returns>
+    public static Vector3 ConvertUnityVectorToECEFVector(Vector3 UnityVector, Vector3 CurrentLocation)
+    {
+        Vector3 unityVector = UnityVector;
+
+        // TODO: Implement Unity to/from geospatial conversions
+        //if (IsValid(GeoReferencingSystem))
+        //{
+        //    FLatLonHeightFloat llh;
+        //    FNorthEastDown nedVectors;
+        //    Conversions.CalculateLatLonHeightFromUnrealLocation(CurrentLocation, GeoReferencingSystem, llh);
+        //    Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.Latitude, llh.Longitude, nedVectors);
+
+        //    //Convert the Unreal Engine linear velocity to be in terms of ECEF
+        //    unityVector = nedVectors.NorthVector * -unityVector.y + nedVectors.EastVector * unityVector.x - nedVectors.DownVector * unityVector.z;
+        //}
+
+        return unityVector;
+    }
+
     /// <summary>
     /// Get the East, North, and Up vectors from the North, East, and Down vector struct
     /// </summary>

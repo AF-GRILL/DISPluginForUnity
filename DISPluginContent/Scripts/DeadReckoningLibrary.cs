@@ -88,7 +88,10 @@ public class DeadReckoningLibrary
 
                     if (GetLocalQuaternionAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Quaternion EntityRotationQuaternion))
                     {
-                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(EntityPduToDeadReckon, EntityRotationQuaternion, DeltaTime);
+                        dvec3 AngularVelocity = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
+                            EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
+
+                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(AngularVelocity, EntityRotationQuaternion, DeltaTime);
                     }
                     else
                     {
@@ -120,7 +123,10 @@ public class DeadReckoningLibrary
 
                     if (GetLocalQuaternionAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Quaternion EntityRotationQuaternion))
                     {
-                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(EntityPduToDeadReckon, EntityRotationQuaternion, DeltaTime);
+                        dvec3 AngularVelocity = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
+                            EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
+
+                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(AngularVelocity, EntityRotationQuaternion, DeltaTime);
                     }
                     else
                     {
@@ -222,7 +228,10 @@ public class DeadReckoningLibrary
 
                     if (GetLocalQuaternionAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Quaternion EntityRotationQuaternion))
                     {
-                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(EntityPduToDeadReckon, EntityRotationQuaternion, DeltaTime);
+                        AngularVelocity = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
+                            EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
+
+                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(AngularVelocity, EntityRotationQuaternion, DeltaTime);
                     }
                     else
                     {
@@ -253,7 +262,7 @@ public class DeadReckoningLibrary
 
                     if (GetLocalQuaternionAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Quaternion EntityRotationQuaternion))
                     {
-                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(EntityPduToDeadReckon, EntityRotationQuaternion, DeltaTime);
+                        DeadReckonedPdu.EntityOrientation = CalculateOrientationFromQuaternion(AngularVelocity, EntityRotationQuaternion, DeltaTime);
                     }
                     else
                     {
@@ -325,20 +334,8 @@ public class DeadReckoningLibrary
     /// <param name="localQuaternion">The Quaternion to convert into an Orientation (Psi, Theta, Phi).</param>
     /// <param name="deltaTime">The time increment for dead reckoning calculation</param>
     /// <returns>The OpenDIS Orientation.</returns>
-    public static Orientation CalculateOrientationFromQuaternion(EntityStatePdu entityPDUToDeadReckon, Quaternion localQuaternion, float deltaTime)
+    public static Orientation CalculateOrientationFromQuaternion(dvec3 AngularVelocity, Quaternion localQuaternion, float deltaTime)
     {
-        dvec3 AngularVelocity = new dvec3(entityPDUToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
-            entityPDUToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, entityPDUToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
-
-        double entityAngularVelocityMagnitude = AngularVelocity.Length;
-        double beta = entityAngularVelocityMagnitude * deltaTime;
-        Vector3Double unitVector = new Vector3Double
-        {
-            X = AngularVelocity.x / entityAngularVelocityMagnitude,
-            Y = AngularVelocity.y / entityAngularVelocityMagnitude,
-            Z = AngularVelocity.z / entityAngularVelocityMagnitude
-        };
-
         Quaternion deadReckoningQuat = localQuaternion * CreateDeadReckoningQuaternion(AngularVelocity, deltaTime);
 
         float theta = (float)Math.Asin(-2 * ((deadReckoningQuat.x * deadReckoningQuat.z) - (deadReckoningQuat.w * deadReckoningQuat.y)));
