@@ -121,11 +121,11 @@ public class DISGameManager : MonoBehaviour
                     GameObject newGameObject = Instantiate(gameObject, DISEntityParentContainer.transform);
 
                     //Update that this Game Object was spawned by the network
-                    DISComponent objectDISComponent = newGameObject.GetComponent<DISComponent>();
-                    if (objectDISComponent)
+                    DISReceiveComponent objectDISReceiveComponent = newGameObject.GetComponent<DISReceiveComponent>();
+                    if (objectDISReceiveComponent)
                     {
-                        objectDISComponent.SpawnedFromNetwork = true;
-                        objectDISComponent.disGameManagerScript = this;
+                        objectDISReceiveComponent.SpawnedFromNetwork = true;
+                        objectDISReceiveComponent.disGameManagerScript = this;
                     }
 
                     AddDISEntityToMap(entityID, newGameObject);
@@ -153,18 +153,18 @@ public class DISGameManager : MonoBehaviour
     /// </summary>
     /// <param name="EntityIDIn">Entity ID to get the DIS Component of.</param>
     /// <returns>The associated DIS Component of the given Entity ID. Null if an entity with the given ID was not found.</returns>
-    public DISComponent GetAssociatedDISComponent(EntityID EntityIDIn)
+    public DISReceiveComponent GetAssociatedDISReceiveComponent(EntityID EntityIDIn)
     {
         UInt64 entityIDU64 = PDUUtil.EntityIDToUInt64(EntityIDIn);
         GameObject gameObject;
-        DISComponent disComponentScript = null;
+        DISReceiveComponent DISReceiveComponentScript = null;
 
         if (entityIDDictionary.TryGetValue(entityIDU64, out gameObject))
         {
-            disComponentScript = gameObject.GetComponent<DISComponent>();
+            DISReceiveComponentScript = gameObject.GetComponent<DISReceiveComponent>();
         }
 
-        return disComponentScript;
+        return DISReceiveComponentScript;
     }
 
     /// <summary>
