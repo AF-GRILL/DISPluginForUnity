@@ -496,4 +496,52 @@ public class Conversions
         outEastVector = eastVector;
         outDownVector = -upVector;
     }
+
+    public static void EcefToUnity(GeoreferenceSystem georeferenceSystem, Vector3Double Ecef, out Vector3Double UnityChoords)
+    {
+        Vector3Double Origin = new Vector3Double
+        {
+            X = georeferenceSystem.GetOrigin().X,
+            Y = georeferenceSystem.GetOrigin().Y,
+            Z = georeferenceSystem.GetOrigin().Z,
+        };
+        Vector3Double UnityChoordsOne = new Vector3Double
+        {
+            X = Ecef.X - Origin.X,
+            Z = Ecef.Y - Origin.Y,
+            Y = Ecef.Z - Origin.Z,
+        };
+        UnityChoords = UnityChoordsOne;
+    }
+
+    public static void LatLonHeightToUnity(GeoreferenceSystem georeferenceSystem, Vector3Double LatLonHeight, out Vector3Double UnityChoords)
+    {
+        Vector3Double ecef;
+        Conversions.CalculateEcefXYZFromLatLonHeight(LatLonHeight, out ecef);
+        EcefToUnity(georeferenceSystem, ecef, out UnityChoords);
+    }
+
+    public static void UnityToEcef(GeoreferenceSystem georeferenceSystem, Transform Obj, out Vector3Double Ecef)
+    {
+        Vector3Double Origin = new Vector3Double
+        {
+            X = georeferenceSystem.GetOrigin().X,
+            Y = georeferenceSystem.GetOrigin().Y,
+            Z = georeferenceSystem.GetOrigin().Z,
+        };
+        Vector3Double EcefOne = new Vector3Double
+        {
+            X = Obj.position.x + Origin.X,
+            Y = Obj.position.y + Origin.Y,
+            Z = Obj.position.z + Origin.Z,
+        };
+        Ecef = EcefOne;
+    }
+
+    public static void UnityToLatLonHeight(GeoreferenceSystem georeferenceSystem, Transform Obj, out Vector3Double LatLonHeight)
+    {
+        Vector3Double ecef;
+        UnityToEcef(georeferenceSystem, Obj, out ecef);
+        Conversions.CalculateLatLonHeightFromEcefXYZ(ecef, out LatLonHeight);
+    }
 }
