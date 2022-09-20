@@ -85,8 +85,6 @@ public class GeoreferenceSystem : MonoBehaviour
             Y = OriginLon,
             Z = OriginAlt
         };
-
-
     }
 
     private Vector3Double geodetic_to_flatearth(Vector3Double latlonalt)
@@ -119,11 +117,189 @@ public class GeoreferenceSystem : MonoBehaviour
         Vector3Double toReturn = new Vector3Double
         {
             X = ((OriginLat * DEG_TO_RAD) + dlat) * RAD_TO_DEG, //Lat: accurate to the 6th decimal place, possibly replace with minor axis
-            Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place (2nd with cosine from above), possibly replace with major axis
+            Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place, possibly replace with major axis
             Z = UnityChoords.Y + OriginAlt //Alt
         };
 
         return toReturn;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="PsiThetaPhi"> Flat Earth PsiThetaPhi </param>
+    /// <param name="LatLonAlt"> Flat Earth LatLongAlt </param>
+    /// <returns> Psi Theta Phi in geocentric </returns>
+    private Vector3Double FlatEarth2WGS_att(Vector3Double PsiThetaPhi, Vector3Double LatLonAlt)
+    {
+        Vector3Double lla = new Vector3Double
+        {
+            X = LatLonAlt.X * DEG_TO_RAD,
+            Y = LatLonAlt.Y * DEG_TO_RAD,
+            Z = LatLonAlt.Z
+        };
+
+        double sin_psi = Math.Sin(PsiThetaPhi.X);
+        double cos_psi = Math.Cos(PsiThetaPhi.X);
+        double sin_theta = Math.Sin(PsiThetaPhi.Y);
+        double cos_theta = Math.Cos(PsiThetaPhi.Y);
+        double sin_phi = Math.Sin(PsiThetaPhi.Z);
+        double cos_phi = Math.Cos(PsiThetaPhi.Z);
+
+        double sin_lat = Math.Sin(lla.X);
+        double cos_lat = Math.Cos(lla.X);
+        double sin_lon = Math.Sin(lla.Y);
+        double cos_lon = Math.Cos(lla.Y);
+
+        if (PsiThetaPhi.Y == 0.0 && PsiThetaPhi.Z == 0.0)
+        {
+            sin_theta = Math.Sin(0.00000000001);
+            cos_theta = Math.Cos(0.00000000001);
+        }
+
+
+        double sin_gc_theta = cos_lat * cos_psi * cos_theta + sin_lat * sin_theta;
+        double theta = Math.Asin(-sin_gc_theta);
+
+
+        double sin_gc_psi = -sin_lat * sin_lon * cos_psi * cos_theta + cos_lon * sin_psi * cos_theta + cos_lat * sin_lon * sin_theta;
+        double cos_gc_psi = -sin_lat * cos_lon * cos_psi * cos_theta - sin_lon * sin_psi * cos_theta + cos_lat * cos_lon * sin_theta;
+        double psi;
+        if(sin_gc_psi != 0.0 || cos_gc_psi != 0.0)
+        {
+            psi = Math.Atan2(sin_gc_psi, cos_gc_psi);
+        }else
+        {
+            psi = 0.0;
+        }
+
+
+        double sin_gc_phi = cos_lat * (cos_psi * sin_theta * sin_phi - sin_psi * cos_phi) - sin_lat * cos_theta * sin_phi;
+        double cos_gc_phi = cos_lat * (cos_psi * sin_theta * cos_phi + sin_psi * cos_phi) - sin_lat * cos_theta * cos_phi;
+        double phi;
+        if (sin_gc_phi != 0.0 || cos_gc_phi != 0.0)
+        {
+            phi = Math.Atan2(sin_gc_phi, cos_gc_phi);
+        }else
+        {
+            phi = 0.0;
+        }
+
+        return new Vector3Double { X = psi, Y = theta, Z = phi };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="PsiThetaPhi"> WGS Psi Theta & Phi </param>
+    /// <param name="LatLonAlt"> WGS Lat Lon & Alt </param>
+    /// <returns> Flat Earth Psi Theta & Phi </returns>
+    private Vector3Double WGS2FlatEarth_att(Vector3Double PsiThetaPhi, Vector3Double LatLonAlt)
+    {
+        Vector3Double lla = new Vector3Double
+        {
+            X = LatLonAlt.X * DEG_TO_RAD,
+            Y = LatLonAlt.Y * DEG_TO_RAD,
+            Z = LatLonAlt.Z
+        };
+
+        double sin_psi_gc = Math.Sin(PsiThetaPhi.X);
+        double cos_psi_gc = Math.Cos(PsiThetaPhi.X);
+        double sin_theta_gc = Math.Sin(PsiThetaPhi.Y);
+        double cos_theta_gc = Math.Cos(PsiThetaPhi.Y);
+        double sin_phi_gc = Math.Sin(PsiThetaPhi.Z);
+        double cos_phi_gc = Math.Cos(PsiThetaPhi.Z);
+
+        double sin_lat = Math.Sin(lla.X);
+        double cos_lat = Math.Cos(lla.X);
+        double sin_lon = Math.Sin(lla.Y);
+        double cos_lon = Math.Cos(lla.Y);
+
+        double sin_theta_local = cos_lat * cos_lon * cos_psi_gc * cos_theta_gc + cos_lat * sin_lon * sin_psi_gc * cos_theta_gc - sin_lat * sin_theta_gc;
+        double theta = Math.Asin(sin_theta_local);
+
+        double cos_psi_local = -sin_lat * cos_lon * cos_theta_gc * cos_psi_gc - sin_lat * sin_lon * cos_theta_gc * sin_psi_gc - cos_lat * sin_theta_gc;
+        double sin_psi_local = -sin_lon * cos_theta_gc * cos_psi_gc - sin_lat * sin_lon * cos_theta_gc * sin_psi_gc - cos_lat * sin_theta_gc;
+        double psi;
+        if (sin_psi_local != 0.0 || cos_psi_local != 0.0)
+        {
+            psi = Math.Atan2(sin_psi_local, cos_psi_local);
+        }else
+        {
+            psi = 0.0;
+        }
+
+        double sin_phi_local = cos_lat * cos_lon * (-cos_phi_gc * sin_psi_gc * sin_theta_gc * cos_psi_gc) + sin_lon * cos_lat * (cos_phi_gc * cos_psi_gc + sin_phi_gc * sin_theta_gc * sin_psi_gc) + sin_lat * sin_phi_gc * cos_theta_gc;
+        double cos_phi_local = cos_lat * cos_lon * (sin_phi_gc * sin_psi_gc + cos_phi_gc * sin_theta_gc * sin_psi_gc) + sin_lon * cos_lat * (-sin_phi_gc * cos_psi_gc + cos_phi_gc * sin_theta_gc * sin_psi_gc) + sin_lat * cos_phi_gc * cos_theta_gc;
+        double phi;
+        if (sin_phi_local != 0.0 || cos_phi_local != 0.0)
+        {
+            phi = Math.Atan2(-sin_phi_local, - cos_phi_local);
+        }else
+        {
+            phi = 0.0;
+        }
+
+        return new Vector3Double 
+        { 
+            X = psi,
+            Y = theta,
+            Z = phi
+        };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="Velocity"> Flat Earth Velocity </param>
+    /// <param name="LatLonAlt"> OBJ Lat Lon & Alt </param>
+    /// <returns> WGS Velocity </returns>
+    private Vector3Double FlatEarth2WGS_vect(Vector3Double Velocity, Vector3Double LatLonAlt)
+    {
+        Vector3Double lla = new Vector3Double
+        {
+            X = LatLonAlt.X * DEG_TO_RAD,
+            Y = LatLonAlt.Y * DEG_TO_RAD,
+            Z = LatLonAlt.Z
+        };
+
+        double sin_lat = Math.Sin(lla.X);
+        double cos_lat = Math.Cos(lla.X);
+        double sin_lon = Math.Sin(lla.Y);
+        double cos_lon = Math.Cos(lla.Y);
+
+        double x = -sin_lat * cos_lon * Velocity.Y - sin_lon * Velocity.X + cos_lat * cos_lon * Velocity.Z;
+        double y = -sin_lat * sin_lon * Velocity.Y + cos_lon * Velocity.X + cos_lat * sin_lon * Velocity.Z;
+        double z = cos_lat * Velocity.Y + sin_lat * Velocity.Z;
+
+        return new Vector3Double { X = x, Y = y, Z = z };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="Velocity"> WGS Velocity </param>
+    /// <param name="LatLonAlt"> OBJ Lat Lon & Alw </param>
+    /// <returns> Flat Earth Velocity </returns>
+    private Vector3Double WGS2FlatEarth_vect(Vector3Double Velocity, Vector3Double LatLonAlt)
+    {
+        Vector3Double lla = new Vector3Double
+        {
+            X = LatLonAlt.X * DEG_TO_RAD,
+            Y = LatLonAlt.Y * DEG_TO_RAD,
+            Z = LatLonAlt.Z
+        };
+
+        double sin_lat = Math.Sin(lla.X);
+        double cos_lat = Math.Cos(lla.X);
+        double sin_lon = Math.Sin(lla.Y);
+        double cos_lon = Math.Cos(lla.Y);
+
+        double x = -sin_lon * Velocity.X + cos_lon * Velocity.Y;
+        double y = -sin_lat * cos_lon * Velocity.X - sin_lat * sin_lon * Velocity.Y + cos_lat * Velocity.Z;
+        double z = cos_lat * cos_lon * Velocity.X + cos_lat * sin_lon * Velocity.Y + sin_lat * Velocity.Z;
+
+        return new Vector3Double { X = x, Y = y, Z = z };
     }
 
     #endregion PrivateFunctions
