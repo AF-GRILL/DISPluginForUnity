@@ -1,7 +1,39 @@
+// *************************************
+// * Classification: UNCLASSIFIED      *
+// *************************************
+
+//*********************************************************************
+//*********************************************************************
+//***
+//*** Property of the US Govt, AFMC/AFRL/SNZW
+//***
+//***       Methods:  geodetic_to_flatearth
+//***              :  flatearth_to_geodetic
+//***              :  geodetic_to_squareflatearth
+//***              :  squareflatearth_to_geodetic
+//***              :  FlatEarth2WGS_att
+//***              :  WGS2FlatEarth_att
+//***              :  FlatEarth2WGS_vect
+//***              :  WGS2FlatEarth_vect
+//***
+//*** Description:  The above methods were converted from CoordinateTranslate class 
+//***    to help translate between different coordinate systems. 
+//***    The current rotines mainly make it possible to translate
+//***    between FlatEarth to Geocentric (WGS-84) and back again.
+//***
+//***
+//***      Author: Ty W. Hayden
+//***     Company: Ball Aerospace Corp. Dayton, OH
+//***        Date: 12 July 1996
+//***
+//*********************************************************************
+//*********************************************************************
+
 using OpenDis.Dis1998;
 using UnityEngine;
-using GlmSharp;
 using System;
+using GlmSharp;
+using System.Collections;
 
 public class GeoreferenceSystem : MonoBehaviour
 {
@@ -28,21 +60,39 @@ public class GeoreferenceSystem : MonoBehaviour
     public double OriginAlt = 0;
 
     private Vector3Double Origin;
-
+    private Vector3Double OriginECEF;
+    private Vector3Double temp;
     // Start is called before the first frame update
     void Awake()
     {
         SetupVars();
 
         #region Debugging
-
-        //geodetic_to_flatearth
-        
-        Vector3Double temp = geodetic_to_flatearth(new Vector3Double { X = OriginLat + .001, Y = OriginLon + .001, Z = OriginAlt + .001 });
-        Debug.Log("Origin: \nX: " + temp.X + "\nY: " + temp.Y + "\nZ: " + temp.Z);
-
+        /*
+        temp = ECEFToUnity(OriginECEF);
+        StartCoroutine(LoopCalc());
+        */
         #endregion Debugging
     }
+    #region DebuggingMethods
+    /*
+    IEnumerator LoopCalc()
+    {
+        int i = 0;
+        while (true)
+        {
+
+            //Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
+            temp = UnityToECEF(temp);
+            Debug.Log("UnityToECEF " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
+            temp = ECEFToUnity(temp);
+            i += 1;
+            yield return new WaitForSeconds(1.0f);
+        }
+    }
+    */
+
+    #endregion DebuggingMethods
 
     #region PublicFunctions
 
@@ -55,7 +105,15 @@ public class GeoreferenceSystem : MonoBehaviour
     {
         Vector3Double LatLonAlt;
         Conversions.CalculateLatLonHeightFromEcefXYZ(ECEF, out LatLonAlt);
-        return geodetic_to_flatearth(LatLonAlt);
+        Vector3Double Unity = geodetic_to_flatearth(LatLonAlt);
+        //TODO: Fix error in conversions.
+        //This is a TEMPORARY fix so that work on other conversions can progress.
+        //error in conversions will be fixed at a later date.
+        Unity.X += 0;
+        Unity.Y += -0.00274202320724726;
+        Unity.Z += -0.00330828618577857;
+        //This is code to be removed
+        return Unity;
     }
 
     public Vector3Double UnityToLatLonAlt(Vector3Double UnityChoords)
@@ -71,7 +129,8 @@ public class GeoreferenceSystem : MonoBehaviour
         return ECEF;
     }
 
-    public Vector3Double GetOriginECEF() { return Origin; }
+    public Vector3Double GetOriginLLA() { return Origin; }
+    public Vector3Double GetOriginECEF() { return OriginECEF; }
 
     #endregion PublicFunctions
 
@@ -85,10 +144,19 @@ public class GeoreferenceSystem : MonoBehaviour
             Y = OriginLon,
             Z = OriginAlt
         };
+
+        Conversions.CalculateEcefXYZFromLatLonHeight(Origin, out OriginECEF);
     }
 
+    /// <summary>
+    /// This method was designed by Mark Speed and modified
+    /// for Unity purposes
+    /// </summary>
+    /// <param name="latlonalt"></param>
+    /// <returns></returns>
     private Vector3Double geodetic_to_flatearth(Vector3Double latlonalt)
     {
+        //angle between d = difference calc and convert
         Vector3Double lla = new Vector3Double
         {
             X = latlonalt.X * DEG_TO_RAD,
@@ -113,6 +181,43 @@ public class GeoreferenceSystem : MonoBehaviour
     {
         double dlat = (UnityChoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
         double dlon = (UnityChoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y) * Math.Cos(dlat + (OriginLat * DEG_TO_RAD))));
+
+        Vector3Double toReturn = new Vector3Double
+        {
+            X = ((OriginLat * DEG_TO_RAD) + dlat) * RAD_TO_DEG, //Lat: accurate to the 6th decimal place, possibly replace with minor axis
+            Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place, possibly replace with major axis
+            Z = UnityChoords.Y + OriginAlt //Alt
+        };
+
+        return toReturn;
+    }
+
+    private Vector3Double geodetic_to_squareflatearth(Vector3Double latlonalt)
+    {
+        Vector3Double lla = new Vector3Double
+        {
+            X = latlonalt.X * DEG_TO_RAD,
+            Y = latlonalt.Y * DEG_TO_RAD,
+            Z = latlonalt.Z,
+        };
+
+        double dlat = lla.X - (OriginLat * DEG_TO_RAD);
+        double dlon = lla.Y - (OriginLon * DEG_TO_RAD);
+
+        Vector3Double toReturn = new Vector3Double
+        {
+            X = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlon, //East: possibly replace with minor axis
+            Y = lla.Z - OriginAlt, //Up
+            Z = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlat //North: possibly replace with major axis
+        };
+
+        return toReturn;
+    }
+
+    private Vector3Double squareflatearth_to_geodetic(Vector3Double UnityChoords)
+    { 
+        double dlat = (UnityChoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
+        double dlon = (UnityChoords.X / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
 
         Vector3Double toReturn = new Vector3Double
         {
