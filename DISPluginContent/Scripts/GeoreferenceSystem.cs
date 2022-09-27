@@ -68,29 +68,29 @@ public class GeoreferenceSystem : MonoBehaviour
         SetupVars();
 
         #region Debugging
-        /*
+        
         temp = ECEFToUnity(OriginECEF);
         StartCoroutine(LoopCalc());
-        */
+        
         #endregion Debugging
     }
     #region DebuggingMethods
-    /*
+    
     IEnumerator LoopCalc()
     {
         int i = 0;
         while (true)
         {
 
-            //Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
+            Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
             temp = UnityToECEF(temp);
-            Debug.Log("UnityToECEF " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
+            //Debug.Log("UnityToECEF " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
             temp = ECEFToUnity(temp);
             i += 1;
             yield return new WaitForSeconds(1.0f);
         }
     }
-    */
+    
 
     #endregion DebuggingMethods
 
@@ -109,9 +109,10 @@ public class GeoreferenceSystem : MonoBehaviour
         //TODO: Fix error in conversions.
         //This is a TEMPORARY fix so that work on other conversions can progress.
         //error in conversions will be fixed at a later date.
-        Unity.X += 0;
-        Unity.Y += -0.00274202320724726;
-        Unity.Z += -0.00330828618577857;
+        //This only works at specific location.
+        //Unity.X += 0;
+        //Unity.Y += -0.00274202320724726;
+        //Unity.Z += -0.00330828618577857;
         //This is code to be removed
         return Unity;
     }

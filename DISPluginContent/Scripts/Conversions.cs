@@ -38,11 +38,11 @@ public class Conversions
     /// <returns></returns>
     public static dmat4 CreateSkewMatrix4x4(dvec3 nVector)
     {
-        return new dmat4(new dvec4(0, nVector.z, -nVector.y, 0),
-            new dvec4(-nVector.z, 0, nVector.x, 0),
-            new dvec4(nVector.y, -nVector.x, 0, 0),
-            dvec4.Zero
-        );
+        return new dmat4(new dvec4(         0,  nVector.z, -nVector.y, 0),
+                         new dvec4(-nVector.z,          0,  nVector.x, 0),
+                         new dvec4( nVector.y, -nVector.x,          0, 0),
+                         dvec4.Zero);
+        
     }
 
     /// <summary>
@@ -52,7 +52,9 @@ public class Conversions
     /// <returns></returns>
     public static dmat3 CreateSkewMatrix(dvec3 nVector)
     {
-        return new dmat3(0, nVector.z, -nVector.y, -nVector.z, 0, nVector.x, nVector.y, -nVector.x, 0);
+        return new dmat3(         0,  nVector.z, -nVector.y, 
+                         -nVector.z,          0,  nVector.x, 
+                          nVector.y, -nVector.x,          0);
     }
 
     /// <summary>
@@ -123,7 +125,7 @@ public class Conversions
 
         outRotationMatrix = dmat4.Zero;
         dmat4 N = new dmat4(new dvec4(AxisVector.x, 0, 0, 0), new dvec4(AxisVector.y, 0, 0, 0), new dvec4(AxisVector.z, 0, 0, 0), dvec4.Zero);
-        dmat4 NTransposeN = N.Transposed * N;
+        dmat4 NTransposeN = N * N.Transposed;
 
         dmat4 NCrossX = CreateSkewMatrix4x4(AxisVector);
 
@@ -151,8 +153,10 @@ public class Conversions
         double SinTheta = glm.Sin(ThetaRadians);
 
         dvec3 N = AxisVector;
-        dmat3 NMat = new dmat3(N, dvec3.Zero, dvec3.Zero);
-
+        dmat3 NMat = new dmat3(N.x, 0, 0,
+                               N.y, 0, 0,
+                               N.z, 0, 0);//N, dvec3.Zero, dvec3.Zero);//HERE
+        
         dmat3 NTransposeN = NMat * NMat.Transposed;
         dmat3 NCrossN = CreateSkewMatrix(N);
 
@@ -237,8 +241,8 @@ public class Conversions
     {
         dmat4 VectorMatrix = new dmat4(new dvec4(vectorToRotate.x, 0, 0, 0), new dvec4(vectorToRotate.y, 0, 0, 0), new dvec4(vectorToRotate.z, 0, 0, 0), dvec4.Zero);
         CreateRotationMatrix4x4(axisVector, thetaRadians, out dmat4 rotationMatrix);
-        dmat4 ResMatrix = VectorMatrix * rotationMatrix.Transposed;
-        outRotatedVector = new dvec3(ResMatrix.Row0);
+        dmat4 ResMatrix =  rotationMatrix * VectorMatrix;
+        outRotatedVector = new dvec3(ResMatrix.Column0);
     }
 
     /// <summary>
