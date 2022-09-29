@@ -43,6 +43,7 @@ public class DISGameManager : MonoBehaviour
 
     private Dictionary<UInt64, GameObject> entityIDDictionary;
     private Dictionary<UInt64, GameObject> entityTypeDictionary;
+    private GeoreferenceSystem georeferenceScript;
 
     public DISGameManager()
     {
@@ -53,6 +54,8 @@ public class DISGameManager : MonoBehaviour
     private void Awake()
     {
         InitializeEntityTypeMappings();
+
+        georeferenceScript = GetComponent<GeoreferenceSystem>();
     }
 
     private void InitializeEntityTypeMappings()
@@ -93,11 +96,11 @@ public class DISGameManager : MonoBehaviour
         UInt64 entityIDU64 = PDUUtil.EntityIDToUInt64(entityID);
         string markingString = PDUUtil.getMarkingAsString(entityStatePdu);
         string markingSAE = PDUUtil.getEntityStatePDUMarkingSAE(entityStatePdu);
-        GameObject gameObject;
+        GameObject entityGameObject;
         
-        if (entityIDDictionary.TryGetValue(entityIDU64, out gameObject))
+        if (entityIDDictionary.TryGetValue(entityIDU64, out entityGameObject))
         {
-            return gameObject;
+            return entityGameObject;
         }
         //This is the first time we have seen this entity state PDU
         else
@@ -111,14 +114,23 @@ public class DISGameManager : MonoBehaviour
             }
 
             //Check if this entity has a mapping specified
-            if (entityTypeDictionary.TryGetValue(entityTypeU64, out gameObject))
+            if (entityTypeDictionary.TryGetValue(entityTypeU64, out entityGameObject))
             {
                 string entityTypeString = PDUUtil.getEntityTypeAsString(entityStatePdu);
 
-                if (gameObject)
+                if (entityGameObject)
                 {
-                    // TODO: Update spawning of object to spawn at the location and rotation specified in the Entity State PDU
-                    GameObject newGameObject = Instantiate(gameObject, DISEntityParentContainer.transform);
+                    Vector3 spawnPosition = Vector3.zero;
+                    Quaternion spawnRotation = Quaternion.Euler(0, 0, 0);
+                    if (georeferenceScript)
+                    {
+                        Vector3Double unityLoc = georeferenceScript.ECEFToUnity(entityStatePdu.EntityLocation);
+                        spawnPosition = new Vector3((float)unityLoc.X, (float)unityLoc.Y, (float)unityLoc.Z);
+
+                        // TODO: Add in rotation conversion going from ESPDU Psi, Theta, Phi to Unity rot
+                    }
+
+                    GameObject newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation, DISEntityParentContainer.transform);
 
                     //Update that this Game Object was spawned by the network
                     DISReceiveComponent objectDISReceiveComponent = newGameObject.GetComponent<DISReceiveComponent>();
@@ -126,6 +138,7 @@ public class DISGameManager : MonoBehaviour
                     {
                         objectDISReceiveComponent.SpawnedFromNetwork = true;
                         objectDISReceiveComponent.disGameManagerScript = this;
+                        objectDISReceiveComponent.georeferenceScript = this.gameObject.GetComponent<GeoreferenceSystem>();
                     }
 
                     AddDISEntityToMap(entityID, newGameObject);

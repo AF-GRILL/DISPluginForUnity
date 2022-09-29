@@ -138,11 +138,13 @@ public class DISReceiveComponent : MonoBehaviour
 
     [HideInInspector]
     public DISGameManager disGameManagerScript;
+    [HideInInspector]
+    public GeoreferenceSystem georeferenceScript;
 
     private int NumberEntityStatePDUsReceived = 0;
     private Coroutine DISHeartbeatCoroutine;
     private float DeltaTimeSinceLastPDU = 0.0f;
-    private EntityStatePdu PreviousDeadReckonedPDU = new EntityStatePdu();
+
     /// <summary>
     /// The difference in ECEF Location from the previous PDU to the current PDU.
     /// </summary>
@@ -151,6 +153,14 @@ public class DISReceiveComponent : MonoBehaviour
     /// The difference in Orientation from the previous PDU to the current PDU.
     /// </summary>
     private Vector3 EntityRotationDifference;
+
+    private void Start()
+    {
+        if (georeferenceScript == null)
+        {
+            georeferenceScript = FindObjectOfType<GeoreferenceSystem>();
+        }
+    }
 
     void HandleDISHeartbeat()
     {
@@ -252,23 +262,21 @@ public class DISReceiveComponent : MonoBehaviour
     void UpdateCommonEntityStateInfo(EntityStatePdu NewEntityStatePDU)
     {
         LatestEntityStatePDUTimestamp = DateTime.Now;
-        MostRecentEntityStatePDU = NewEntityStatePDU;
-        PreviousDeadReckonedPDU = MostRecentDeadReckoningPDU;
-        MostRecentDeadReckoningPDU = PDUUtil.DeepCopyEntityStatePDU(MostRecentEntityStatePDU);
         DeltaTimeSinceLastPDU = 0.0f;
 
         //Get difference in ECEF between most recent dead reckoning location and last known Dead Reckoning location
-        EntityECEFLocationDifference.X = MostRecentEntityStatePDU.EntityLocation.X - PreviousDeadReckonedPDU.EntityLocation.X;
-        EntityECEFLocationDifference.Y = MostRecentEntityStatePDU.EntityLocation.Y - PreviousDeadReckonedPDU.EntityLocation.Y;
-        EntityECEFLocationDifference.Z = MostRecentEntityStatePDU.EntityLocation.Z - PreviousDeadReckonedPDU.EntityLocation.Z;
+        EntityECEFLocationDifference.X = NewEntityStatePDU.EntityLocation.X - MostRecentDeadReckoningPDU.EntityLocation.X;
+        EntityECEFLocationDifference.Y = NewEntityStatePDU.EntityLocation.Y - MostRecentDeadReckoningPDU.EntityLocation.Y;
+        EntityECEFLocationDifference.Z = NewEntityStatePDU.EntityLocation.Z - MostRecentDeadReckoningPDU.EntityLocation.Z;
 
-        Vector3 rotDiffDegrees = new Vector3(glm.Degrees(MostRecentEntityStatePDU.EntityOrientation.Psi) - glm.Degrees(PreviousDeadReckonedPDU.EntityOrientation.Psi),
-            glm.Degrees(MostRecentEntityStatePDU.EntityOrientation.Theta) - glm.Degrees(PreviousDeadReckonedPDU.EntityOrientation.Theta),
-            glm.Degrees(MostRecentEntityStatePDU.EntityOrientation.Phi) - glm.Degrees(PreviousDeadReckonedPDU.EntityOrientation.Phi));
-
+        Vector3 rotDiffDegrees = new Vector3(glm.Degrees(NewEntityStatePDU.EntityOrientation.Psi) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Psi),
+            glm.Degrees(NewEntityStatePDU.EntityOrientation.Theta) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Theta),
+            glm.Degrees(NewEntityStatePDU.EntityOrientation.Phi) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Phi));
         rotDiffDegrees = Conversions.UnwindRotation(rotDiffDegrees);
-
         EntityRotationDifference = new Vector3(glm.Radians(rotDiffDegrees.x), glm.Radians(rotDiffDegrees.y), glm.Radians(rotDiffDegrees.z));
+
+        MostRecentEntityStatePDU = NewEntityStatePDU;
+        MostRecentDeadReckoningPDU = PDUUtil.DeepCopyEntityStatePDU(MostRecentEntityStatePDU);
 
         CurrentEntityID.fromEntityID(NewEntityStatePDU.EntityID);
 
@@ -430,9 +438,14 @@ public class DISReceiveComponent : MonoBehaviour
 
             Vector3 clampDirection = new Vector3((float)downVector.x, (float)downVector.y, (float)downVector.z);
 
-            // TODO: Update the entityLocation to go off of the most recent dead reckoning update location in Unity coordinates
-
             Vector3 entityLocation = gameObject.transform.position;
+            if (georeferenceScript)
+            {
+                //Get the location the object is supposed to be at according to the most recent dead reckoning update.
+                Vector3Double mostRecentDRPosition = georeferenceScript.ECEFToUnity(MostRecentDeadReckoningPDU.EntityLocation);
+                entityLocation = new Vector3((float)mostRecentDRPosition.X, (float)mostRecentDRPosition.Y, (float)mostRecentDRPosition.Z);
+            }
+
             Vector3 raycastEndLocation = (clampDirection * 100000) + entityLocation;
             Vector3 raycastStartLocation = (clampDirection * -100000) + entityLocation;
 

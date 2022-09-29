@@ -7,7 +7,10 @@ using GlmSharp;
 
 public class DISSendComponent : MonoBehaviour
 {
-    public DISGameManager disGameManagerScript;
+    /// <summary>
+    /// The DIS Game Manager Game Object that exists in the world.
+    /// </summary>
+    public GameObject DISGameManager;
 
     /// <summary>
     /// The Entity Type of the associated entity.Specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
@@ -43,6 +46,13 @@ public class DISSendComponent : MonoBehaviour
     /// </summary>
     [Tooltip("The sending mode that this entity should use for Entity State PDUs.")]
     public EEntityStateSendingMode EntityStatePDUSendingMode = EEntityStateSendingMode.None;
+    /// <summary>
+    /// The rate at which the timer that calculates the current linear velocity, linear acceleration, and angular acceleration of the entity gets executed.
+	/// The values calculated by this timer get utilized when forming an Entity State PDU.
+    /// </summary>
+    [Min(0.01f)]
+    [Tooltip("The rate at which the timer that calculates the current linear velocity, linear acceleration, and angular acceleration of the entity gets executed. The values calculated by this timer get utilized when forming an Entity State PDU.")]
+    public float EntityStateCalculationRate = 0.1f;
     /// <summary>
     /// The dead reckoning algorithm to use.Specifies the dynamic changes to the entities appearance attributes.
     /// </summary>
@@ -89,35 +99,82 @@ public class DISSendComponent : MonoBehaviour
     private float DeltaTimeSinceLastPDU = 0;
     private EntityStatePdu PreviousEntityStatePDU;
 
-    private float TimeOfLastVelocityCalculation;
-    private Vector3 PreviousUnityLocation;
-    private Vector3 PreviousUnityRotation;
-    private Vector3 PreviousUnityLinearVelocity;
+    private float TimeOfLastParametersCalculation;
+    private Vector3 LastCalculatedUnityLocation;
+    private Quaternion LastCalculatedUnityRotation;
+    private Vector3 LastCalculatedUnityLinearVelocity;
+    private Vector3 LastCalculatedECEFLinearVelocity;
+    private Vector3 LastCalculatedECEFLinearAcceleration;
+    private Vector3 LastCalculatedBodyLinearVelocity;
+    private Vector3 LastCalculatedBodyLinearAcceleration;
+    private Vector3 LastCalculatedAngularVelocity;
+
     private PDUSender pduSenderScript;
+    private DISGameManager disGameManagerScript;
+    private GeoreferenceSystem georeferenceScript;
 
     void Start()
     {
         //Setup Previous/Current Location and Rotation variables.
-        PreviousUnityLocation = transform.position;
-        PreviousUnityRotation = transform.eulerAngles;
+        LastCalculatedUnityLocation = transform.position;
+        LastCalculatedUnityRotation = transform.rotation;
 
         //Form Entity State PDU packets
         MostRecentEntityStatePDU = FormEntityStatePDU();
         MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
         PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
-        pduSenderScript = (disGameManagerScript == null) ? FindObjectOfType<DISGameManager>()?.GetComponent<PDUSender>() : disGameManagerScript.GetComponent<PDUSender>();
+        //If the DIS Game Manager was not set, attempt to find it
+        if (DISGameManager == null)
+        {
+            DISGameManager = FindObjectOfType<DISGameManager>()?.gameObject;
+        }
+        //Check if it is set and initialize scripts from it
+        if (DISGameManager)
+        {
+            pduSenderScript = DISGameManager.GetComponent<PDUSender>();
+            disGameManagerScript = DISGameManager.GetComponent<DISGameManager>();
+            georeferenceScript = DISGameManager.GetComponent<GeoreferenceSystem>();
 
-        //Begin play with Entity State PDU
-        if (pduSenderScript == null)
+            //Begin play with Entity State PDU
+            if (pduSenderScript == null)
+            {
+                Debug.LogError("DISGameManager is missing a PDU Sender script. Please make sure it has one attached.");
+            }
+            else if (EntityStatePDUSendingMode != EEntityStateSendingMode.None)
+            {
+                pduSenderScript = DISGameManager.GetComponent<PDUSender>();
+                pduSenderScript.SendPdu(MostRecentEntityStatePDU);
+            }
+        }
+        else
         {
             Debug.LogError("Invalid DISGameManager. Please make sure one is in the world.");
         }
-        else if (EntityStatePDUSendingMode != EEntityStateSendingMode.None)
+
+        InvokeRepeating("UpdateEntityStateCalculations", EntityStateCalculationRate, EntityStateCalculationRate);
+    }
+
+    void UpdateEntityStateCalculations()
+    {
+        float deltaTime = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
+
+        //Update previous velocity, rotation, and location regardless of if an Entity State PDU was sent out.		
+        LastCalculatedAngularVelocity = CalculateAngularVelocity();
+
+        CalculateECEFLinearVelocityAndAcceleration(out LastCalculatedECEFLinearVelocity, out LastCalculatedECEFLinearAcceleration);
+        CalculateBodyLinearVelocityAndAcceleration(LastCalculatedAngularVelocity, out LastCalculatedBodyLinearVelocity, out LastCalculatedBodyLinearAcceleration);
+
+        if (deltaTime > 0)
         {
-            pduSenderScript = disGameManagerScript.GetComponent<PDUSender>();
-            pduSenderScript.SendPdu(MostRecentEntityStatePDU);
+            //Divide location offset by 100 to convert to meters
+            LastCalculatedUnityLinearVelocity = (transform.position - LastCalculatedUnityLocation) / (deltaTime * 100);
         }
+
+        LastCalculatedUnityLocation = transform.position;
+        LastCalculatedUnityRotation = transform.rotation;
+
+        TimeOfLastParametersCalculation = Time.realtimeSinceStartup;
     }
 
     // Called every frame
@@ -129,13 +186,6 @@ public class DISSendComponent : MonoBehaviour
         {
             SendEntityStatePDU();
         }
-
-        //Update previous velocity, rotation, and location regardless of if an Entity State PDU was sent out.
-        //Multiply by 100 to convert velocity to m/s
-        PreviousUnityLinearVelocity = (transform.position - PreviousUnityLocation) / (Time.deltaTime * 100);
-        PreviousUnityLocation = transform.position;
-        PreviousUnityRotation = transform.eulerAngles;
-        TimeOfLastVelocityCalculation = Time.timeSinceLevelLoad;
     }
 
     void OnDestroy()
@@ -161,7 +211,7 @@ public class DISSendComponent : MonoBehaviour
         EmitAppropriatePDU(finalESPDU);
     }
 
-    void SetEntityCapabilities(int NewEntityCapabilities)
+    public void SetEntityCapabilities(int NewEntityCapabilities)
     {
         //If the new entity capabilities differ, send out a new ESPDU
         if (EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStatePDU && NewEntityCapabilities != EntityCapabilities && NewEntityCapabilities >= 0)
@@ -179,7 +229,7 @@ public class DISSendComponent : MonoBehaviour
         }
     }
 
-    void SetEntityAppearance(int NewEntityAppearance)
+    public void SetEntityAppearance(int NewEntityAppearance)
     {
         //If the new appearance differs, send out a new ESPDU
         if (NewEntityAppearance != EntityAppearance && NewEntityAppearance >= 0)
@@ -194,7 +244,7 @@ public class DISSendComponent : MonoBehaviour
         }
     }
 
-    void SetDeadReckoningAlgorithm(EDeadReckoningAlgorithm NewDeadReckoningAlgorithm)
+    public void SetDeadReckoningAlgorithm(EDeadReckoningAlgorithm NewDeadReckoningAlgorithm)
     {
         //If the dead reckoning algorithm differs and is in the appropriate range, send out a new ESPDU
         if (EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStatePDU && NewDeadReckoningAlgorithm != DeadReckoningAlgorithm)
@@ -212,7 +262,7 @@ public class DISSendComponent : MonoBehaviour
         }
     }
 
-    EntityStatePdu FormEntityStatePDU()
+    public EntityStatePdu FormEntityStatePDU()
     {
         EntityStatePdu newEntityStatePDU = new EntityStatePdu();
 
@@ -224,7 +274,6 @@ public class DISSendComponent : MonoBehaviour
         newEntityStatePDU.EntityAppearance = EntityAppearance;
 
         newEntityStatePDU.DeadReckoningParameters.DeadReckoningAlgorithm = (byte)DeadReckoningAlgorithm;
-        float timeSinceLastCalc = Time.timeSinceLevelLoad - TimeOfLastVelocityCalculation;
 
         if (disGameManagerScript)
         {
@@ -235,138 +284,79 @@ public class DISSendComponent : MonoBehaviour
             newEntityStatePDU.ExerciseID = Convert.ToByte(FindObjectOfType<DISGameManager>()?.ExerciseID);
         }
 
-        // TODO: Implement Unity to/from geospatial conversions
-        newEntityStatePDU.EntityLocation = new Vector3Double
-        {
-            X = -2187316.72454938,
-            Y = -4558561.94075072,
-            Z = 3882725.39901095
-        };
-        newEntityStatePDU.EntityOrientation = new Orientation
-        {
-            Psi = -2.90558f,
-            Theta = 0.500781f,
-            Phi = 2.2565f
-        };
-
         //Set all geospatial values
-        //if (IsValid(GeoReferencingSystem))
-        //{
-        //    //Calculate the position of the entity in ECEF
-        //    Vector3Double ecefLocation;
-        //    Conversions.CalculateEcefXYZFromUnrealLocation(transform.position, GeoReferencingSystem, ecefLocation);
+        if (georeferenceScript)
+        {
+            //Calculate the position of the entity in ECEF
+            newEntityStatePDU.EntityLocation = georeferenceScript.UnityToECEF(transform.position);
 
-        //    newEntityStatePDU.EntityLocation = new Vector3Double
-        //    {
-        //        X = ecefLocation.X,
-        //        Y = ecefLocation.Y,
-        //        Z = ecefLocation.Z
-        //    };
+            // TODO: Implement Unity to/from geospatial conversions
+            //Calculate the orientation of the entity in Psi, Theta, Phi
+            //Vector3Double latLonHeightMeters;
+            //Vector3Double headingPitchRollDegrees;
+            //Conversions.CalculateLatLonHeightFromUnrealLocation(transform.position, GeoReferencingSystem, latLonHeightMeters);
+            //Conversions.GetHeadingPitchRollFromUnrealRotation(transform.eulerAngles, transform.position, GeoReferencingSystem, headingPitchRollDegrees);
+            //Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees.X, headingPitchRollDegrees.Y, headingPitchRollDegrees.Z, latLonHeightMeters.X, latLonHeightMeters.Y, out double psi, out double theta, out double phi);
 
-        //    //Calculate the orientation of the entity in Psi, Theta, Phi
-        //    Vector3Double latLonHeightMeters;
-        //    Vector3Double headingPitchRollDegrees;
-        //    Conversions.CalculateLatLonHeightFromUnrealLocation(transform.position, GeoReferencingSystem, latLonHeightMeters);
-        //    Conversions.GetHeadingPitchRollFromUnrealRotation(transform.eulerAngles, transform.position, GeoReferencingSystem, headingPitchRollDegrees);
-        //    Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees.X, headingPitchRollDegrees.Y, headingPitchRollDegrees.Z, latLonHeightMeters.X, latLonHeightMeters.Y, out double psi, out double theta, out double phi);
-
-        //    newEntityStatePDU.EntityOrientation = new Orientation
-        //    {
-        //        Psi = (float)psi,
-        //        Theta = (float)theta,
-        //        Phi = (float)phi
-        //    };
-        //}
-        //else
-        //{
-        //    Debug.LogWarning("Invalid GeoReference. Please make sure one is in the world."));
-        //}
+            //newEntityStatePDU.EntityOrientation = new Orientation
+            //{
+            //    Psi = (float)psi,
+            //    Theta = (float)theta,
+            //    Phi = (float)phi
+            //};
+        }
+        else
+        {
+            Debug.LogWarning("Invalid GeoReference Script. Please make sure one is attached to the DIS Game Manager.");
+        }
 
         //Set all Dead Reckoning Parameters
-        if (timeSinceLastCalc > 0)
+        Vector3 angularVelocity = CalculateAngularVelocity();
+        newEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity = new Vector3Float
         {
-            //Calculate the velocities and acceleration of the entity in m/s
-            Vector3 curLoc = transform.position;
-            //Multiply by 100 to convert velocity to m/s
-            Vector3 curUnityLinearVelocity = (curLoc - PreviousUnityLocation) / (timeSinceLastCalc * 100);
+            X = angularVelocity.x,
+            Y = angularVelocity.y,
+            Z = angularVelocity.z
+        };
 
-            Vector3 curRot = transform.eulerAngles;
-            Vector3 rotDiff = DeadReckoningLibrary.CalculateDirectionalRotationDifference(PreviousUnityRotation.y, PreviousUnityRotation.x, PreviousUnityRotation.z, curRot.y, curRot.x, curRot.z);
-
-            Vector3Float angularVelocity = new Vector3Float
-            {
-                X = glm.Radians(rotDiff.x) / timeSinceLastCalc,
-                Y = glm.Radians(rotDiff.y) / timeSinceLastCalc,
-                Z = glm.Radians(rotDiff.z) / timeSinceLastCalc
-            };
-            newEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity = angularVelocity;
-
-            Vector3Float linearAcceleration = new Vector3Float();
-            //Apply the appropriate acceleration based on Dead Reckoning algorithm being used
-            if ((byte)DeadReckoningAlgorithm < 6)
-            {
-                //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
-                Vector3 curLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(curUnityLinearVelocity, curLoc);
-                newEntityStatePDU.EntityLinearVelocity = new Vector3Float
-                {
-                    X = curLinearVelocity.x,
-                    Y = curLinearVelocity.y,
-                    Z = curLinearVelocity.z
-                };
-
-                Vector3 prevECEFLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(PreviousUnityLinearVelocity, PreviousUnityLocation);
-                linearAcceleration = new Vector3Float
-                {
-                    X = (newEntityStatePDU.EntityLinearVelocity.X - prevECEFLinearVelocity.x) / timeSinceLastCalc,
-                    Y = (newEntityStatePDU.EntityLinearVelocity.Y - prevECEFLinearVelocity.y) / timeSinceLastCalc,
-                    Z = (newEntityStatePDU.EntityLinearVelocity.Z - prevECEFLinearVelocity.z) / timeSinceLastCalc
-                };
-            }
-            else
-            {
-                //Convert linear velocity vectors to be in body space --- Use inverse UE rotations to convert vectors into appropriate DIS body space
-                Vector3 LinearVelocity = Vector3.Scale(Quaternion.Euler(curRot) * curUnityLinearVelocity, new Vector3(1, 1, -1));
-                newEntityStatePDU.EntityLinearVelocity = new Vector3Float
-                {
-                    X = LinearVelocity.x,
-                    Y = LinearVelocity.y,
-                    Z = LinearVelocity.z
-                };
-                Vector3 prevVelBodySpace = Vector3.Scale(Quaternion.Euler(PreviousUnityRotation) * PreviousUnityLinearVelocity, new Vector3(1, 1, -1));
-
-                //Calculate the centripetal acceleration in body space
-                dvec3 dvecAngularVelocity = new dvec3(angularVelocity.X, angularVelocity.Y, angularVelocity.Z);
-                dmat3 SkewMatrix = Conversions.CreateSkewMatrix(dvecAngularVelocity);
-                dvec3 dvecBodyVelocityVector = new dvec3(newEntityStatePDU.EntityLinearVelocity.X, newEntityStatePDU.EntityLinearVelocity.Y, newEntityStatePDU.EntityLinearVelocity.Z);
-                dvec3 dvecCentripetalAcceleration = (SkewMatrix * dvecBodyVelocityVector);
-
-                linearAcceleration = new Vector3Float
-                {
-                    X = ((newEntityStatePDU.EntityLinearVelocity.X - prevVelBodySpace.x) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.x,
-                    Y = ((newEntityStatePDU.EntityLinearVelocity.Y - prevVelBodySpace.y) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.y,
-                    Z = ((newEntityStatePDU.EntityLinearVelocity.Z - prevVelBodySpace.z) / timeSinceLastCalc) + (float)dvecCentripetalAcceleration.z
-                };
-            }
-
-            newEntityStatePDU.DeadReckoningParameters.EntityLinearAcceleration = linearAcceleration;
+        Vector3 linearVelocity = new Vector3();
+        Vector3 linearAcceleration = new Vector3();
+        //Apply the appropriate acceleration based on Dead Reckoning algorithm being used
+        if ((byte)DeadReckoningAlgorithm == 1 || (byte)DeadReckoningAlgorithm == 2 || (byte)DeadReckoningAlgorithm == 3 || (byte)DeadReckoningAlgorithm == 4 || (byte)DeadReckoningAlgorithm == 5)
+        {
+            CalculateECEFLinearVelocityAndAcceleration(out linearVelocity, out linearAcceleration);
         }
+        else if((byte)DeadReckoningAlgorithm == 6 || (byte)DeadReckoningAlgorithm == 7 || (byte)DeadReckoningAlgorithm == 8 || (byte)DeadReckoningAlgorithm == 9)
+        {
+            CalculateBodyLinearVelocityAndAcceleration(angularVelocity, out linearVelocity, out linearAcceleration);
+        }
+
+        newEntityStatePDU.EntityLinearVelocity = new Vector3Float
+        {
+            X = linearVelocity.x,
+            Y = linearVelocity.y,
+            Z = linearVelocity.z
+        };
+        newEntityStatePDU.DeadReckoningParameters.EntityLinearAcceleration = new Vector3Float
+        {
+            X = linearAcceleration.x,
+            Y = linearAcceleration.y,
+            Z = linearAcceleration.z
+        };
 
         newEntityStatePDU.DeadReckoningParameters.OtherParameters = DeadReckoningLibrary.FormOtherParameters(DeadReckoningAlgorithm, newEntityStatePDU.EntityOrientation, newEntityStatePDU.EntityLocation);
 
         return newEntityStatePDU;
     }
 
-    bool CheckDeadReckoningThreshold()
+    public bool CheckDeadReckoningThreshold()
     {
         bool outsideThreshold = false;
 
         if (DeadReckoningLibrary.DeadReckoning(MostRecentEntityStatePDU, DeltaTimeSinceLastPDU, ref MostRecentDeadReckoningPDU))
         {
             //Get the actual position of the entity
-            Vector3Double ecefLocation = new Vector3Double();
-
-            // TODO: Implement Unity to/from geospatial conversions
-            //Conversions.CalculateEcefXYZFromUnrealLocation(transform.position, GeoReferencingSystem, ecefLocation);
+            Vector3Double ecefLocation = georeferenceScript.UnityToECEF(transform.position);
 
             //Get the position difference along each axis. Values should be in ECEF.
             bool xPosOutsideThreshold = Math.Abs(ecefLocation.X - MostRecentDeadReckoningPDU.EntityLocation.X) > DeadReckoningPositionThresholdMeters;
@@ -383,7 +373,7 @@ public class DISSendComponent : MonoBehaviour
         return outsideThreshold;
     }
 
-    bool CheckOrientationQuaternionThreshold()
+    public bool CheckOrientationQuaternionThreshold()
     {
         bool outsideThreshold = false;
 
@@ -429,7 +419,7 @@ public class DISSendComponent : MonoBehaviour
         return outsideThreshold;
     }
 
-    bool CheckOrientationMatrixThreshold()
+    public bool CheckOrientationMatrixThreshold()
     {
         bool outsideThreshold = false;
 
@@ -477,7 +467,7 @@ public class DISSendComponent : MonoBehaviour
         return outsideThreshold;
     }
 
-    public virtual bool SendEntityStatePDU()
+    public bool SendEntityStatePDU()
     {
         bool sentUpdate = false;
 
@@ -495,6 +485,102 @@ public class DISSendComponent : MonoBehaviour
         }
 
         return sentUpdate;
+    }
+
+    public void CalculateECEFLinearVelocityAndAcceleration(out Vector3 ECEFLinearVelocity, out Vector3 ECEFLinearAcceleration)
+    {
+        float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
+
+        //If delta time is greater than zero, calculate new values. Otherwise use previous calculations
+        if (timeSinceLastCalc > 0)
+        {
+            Vector3 curLoc = transform.position;
+            //Divide location offset by 100 to convert to meters
+            Vector3 curUnrealLinearVelocity = (curLoc - LastCalculatedUnityLocation) / (timeSinceLastCalc * 100);
+
+            //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
+            Vector3Double ecefLinearVelocityDouble = Conversions.ConvertUnityVectorToECEFVector(curUnrealLinearVelocity, georeferenceScript, curLoc);
+            ECEFLinearVelocity = new Vector3((float)ecefLinearVelocityDouble.X, (float)ecefLinearVelocityDouble.Y, (float)ecefLinearVelocityDouble.Z);
+            Vector3Double prevECEFLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(LastCalculatedUnityLinearVelocity, georeferenceScript, LastCalculatedUnityLocation);
+
+            ECEFLinearAcceleration = new Vector3
+            {
+                x = (float)(ECEFLinearVelocity.x - prevECEFLinearVelocity.X) / timeSinceLastCalc,
+                y = (float)(ECEFLinearVelocity.y - prevECEFLinearVelocity.Y) / timeSinceLastCalc,
+                z = (float)(ECEFLinearVelocity.z - prevECEFLinearVelocity.Z) / timeSinceLastCalc
+            };
+        }
+        else
+        {
+            //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
+            ECEFLinearVelocity = LastCalculatedECEFLinearVelocity;
+            ECEFLinearAcceleration = LastCalculatedECEFLinearAcceleration;
+        }
+    }
+
+    public void CalculateBodyLinearVelocityAndAcceleration(Vector3 AngularVelocity, out Vector3 BodyLinearVelocity, out Vector3 BodyLinearAcceleration)
+    {
+        float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
+
+        //If delta time greater than zero, calculate new values. Otherwise use previous calculations
+        if (timeSinceLastCalc > 0)
+        {
+            Vector3 curLoc = transform.position;
+            Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / (timeSinceLastCalc * 100);
+
+            //Convert linear velocity vectors to be in body space --- Use inverse UE rotations to convert vectors into appropriate DIS body space
+            BodyLinearVelocity = Vector3.Scale(transform.rotation * curUnityLinearVelocity, new Vector3(1, 1, -1));
+            Vector3 prevVelBodySpace = Vector3.Scale(LastCalculatedUnityRotation * LastCalculatedUnityLinearVelocity, new Vector3(1, 1, -1));
+            BodyLinearAcceleration = (BodyLinearVelocity - prevVelBodySpace) / timeSinceLastCalc;
+
+            //Calculate the centripetal acceleration in body space
+            dvec3 dvecAngularVelocity = new dvec3(AngularVelocity.x, AngularVelocity.y, AngularVelocity.z);
+            dmat3 SkewMatrix = Conversions.CreateSkewMatrix(dvecAngularVelocity);
+            dvec3 dvecBodyVelocityVector = new dvec3(BodyLinearVelocity.x, BodyLinearVelocity.y, BodyLinearVelocity.z);
+            dvec3 dvecCentripetalAcceleration = (SkewMatrix * dvecBodyVelocityVector);
+
+            BodyLinearAcceleration = new Vector3
+            {
+                x = BodyLinearAcceleration.x + (float)dvecCentripetalAcceleration.x,
+                y = BodyLinearAcceleration.y + (float)dvecCentripetalAcceleration.y,
+                z = BodyLinearAcceleration.z + (float)dvecCentripetalAcceleration.z
+            };
+        }
+        else
+        {
+            //Convert linear velocity vectors to be in body space --- Use inverse UE rotations to convert vectors into appropriate DIS body space
+            BodyLinearVelocity = LastCalculatedBodyLinearVelocity;
+            BodyLinearAcceleration = LastCalculatedBodyLinearAcceleration;
+        }
+    }
+
+    public Vector3 CalculateAngularVelocity()
+    {
+        Vector3 angularVelocity = LastCalculatedAngularVelocity;
+        float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
+
+        if (timeSinceLastCalc > 0)
+        {
+            //Convert the rotators to quaternions
+            Quaternion oldQuat = LastCalculatedUnityRotation;
+            Quaternion newQuat = transform.rotation;
+            oldQuat.Normalize();
+            newQuat.Normalize();
+
+            //Get the rotational difference between the quaternions -- Gives back direction of rotation too
+            Quaternion rotDiff = Quaternion.Inverse(oldQuat) * newQuat;
+
+            Vector3 rotationAxis;
+            float rotationAngle;
+            rotDiff.ToAngleAxis(out rotationAngle, out rotationAxis);
+            rotationAngle = glm.Radians(rotationAngle);
+            
+            angularVelocity = (rotationAngle * rotationAxis) / timeSinceLastCalc;
+            //Swap axes as needed and invert X and Y axis
+            angularVelocity = new Vector3(-angularVelocity.z, -angularVelocity.x, angularVelocity.y);
+        }
+
+        return angularVelocity;
     }
 
     bool EmitAppropriatePDU(EntityStatePdu pduToSend)

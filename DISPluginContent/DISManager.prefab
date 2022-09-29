@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3740386622288005697}
   - component: {fileID: 3740386622288005759}
   - component: {fileID: 3424637735621093189}
+  - component: {fileID: 6292510029869354289}
   m_Layer: 0
   m_Name: DISManager
   m_TagString: Untagged
@@ -45,10 +46,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7754ed5a8476c64681a9868f4b89ad9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ExerciseID: 0
+  ExerciseID: 13
   SiteID: 0
   ApplicationID: 0
-  entityTypes: []
+  entityTypes:
+  - friendlyName: Tester
+    entityTypes:
+    - entityKind: 1
+      domain: 2
+      country: 225
+      category: 1
+      subcategory: 3
+      specific: 0
+      extra: 0
+    gameObject: {fileID: 0}
   DISEntityParentContainer: {fileID: 0}
 --- !u!114 &3740386622288005759
 MonoBehaviour:
@@ -81,7 +92,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxQueueSize: 1024
-  connectionType: 0
+  connectionType: 1
   ipAddressString: 10.0.1.123
   port: 5014
   autoConnectAtStart: 1
+--- !u!114 &6292510029869354289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3740386622288005756}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f882ccb308c688c46ae13fe9533588e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OriginLat: 37.4720128
+  OriginLon: -115.5050288
+  OriginAlt: 1410

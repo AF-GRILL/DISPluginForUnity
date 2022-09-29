@@ -68,14 +68,14 @@ public class GeoreferenceSystem : MonoBehaviour
         SetupVars();
 
         #region Debugging
-        
+
         temp = ECEFToUnity(OriginECEF);
         StartCoroutine(LoopCalc());
-        
+
         #endregion Debugging
     }
     #region DebuggingMethods
-    
+
     IEnumerator LoopCalc()
     {
         int i = 0;
@@ -83,14 +83,15 @@ public class GeoreferenceSystem : MonoBehaviour
         {
 
             Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
-            temp = UnityToECEF(temp);
+            Vector3 unityLoc = new Vector3((float)temp.X, (float)temp.Y, (float)temp.Z);
+            temp = UnityToECEF(unityLoc);
             //Debug.Log("UnityToECEF " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
             temp = ECEFToUnity(temp);
             i += 1;
             yield return new WaitForSeconds(1.0f);
         }
     }
-    
+
 
     #endregion DebuggingMethods
 
@@ -117,14 +118,28 @@ public class GeoreferenceSystem : MonoBehaviour
         return Unity;
     }
 
-    public Vector3Double UnityToLatLonAlt(Vector3Double UnityChoords)
+    public Vector3Double UnityToLatLonAlt(Vector3 UnityCoords)
     {
-        return flatearth_to_geodetic(UnityChoords);
+        Vector3Double unityCoordsDouble = new Vector3Double
+        {
+            X = UnityCoords.x,
+            Y = UnityCoords.y,
+            Z = UnityCoords.z
+        };
+
+        return flatearth_to_geodetic(unityCoordsDouble);
     }
 
-    public Vector3Double UnityToECEF(Vector3Double UnityChoords)
+    public Vector3Double UnityToECEF(Vector3 UnityCoords)
     {
-        Vector3Double LatLonAlt = flatearth_to_geodetic(UnityChoords);
+        Vector3Double unityCoordsDouble = new Vector3Double
+        {
+            X = UnityCoords.x,
+            Y = UnityCoords.y,
+            Z = UnityCoords.z
+        };
+
+        Vector3Double LatLonAlt = flatearth_to_geodetic(unityCoordsDouble);
         Vector3Double ECEF;
         Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt, out ECEF);
         return ECEF;
@@ -178,16 +193,16 @@ public class GeoreferenceSystem : MonoBehaviour
         return toReturn;
     }
 
-    private Vector3Double flatearth_to_geodetic(Vector3Double UnityChoords)
+    private Vector3Double flatearth_to_geodetic(Vector3Double UnityCoords)
     {
-        double dlat = (UnityChoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
-        double dlon = (UnityChoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y) * Math.Cos(dlat + (OriginLat * DEG_TO_RAD))));
+        double dlat = (UnityCoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y));
+        double dlon = (UnityCoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y) * Math.Cos(dlat + (OriginLat * DEG_TO_RAD))));
 
         Vector3Double toReturn = new Vector3Double
         {
             X = ((OriginLat * DEG_TO_RAD) + dlat) * RAD_TO_DEG, //Lat: accurate to the 6th decimal place, possibly replace with minor axis
             Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place, possibly replace with major axis
-            Z = UnityChoords.Y + OriginAlt //Alt
+            Z = UnityCoords.Y + OriginAlt //Alt
         };
 
         return toReturn;
@@ -215,16 +230,16 @@ public class GeoreferenceSystem : MonoBehaviour
         return toReturn;
     }
 
-    private Vector3Double squareflatearth_to_geodetic(Vector3Double UnityChoords)
-    { 
-        double dlat = (UnityChoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
-        double dlon = (UnityChoords.X / (EARTH_GEOCENTRIC_RADIUS + UnityChoords.Y));
+    private Vector3Double squareflatearth_to_geodetic(Vector3Double UnityCoords)
+    {
+        double dlat = (UnityCoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y));
+        double dlon = (UnityCoords.X / (EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y));
 
         Vector3Double toReturn = new Vector3Double
         {
             X = ((OriginLat * DEG_TO_RAD) + dlat) * RAD_TO_DEG, //Lat: accurate to the 6th decimal place, possibly replace with minor axis
             Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place, possibly replace with major axis
-            Z = UnityChoords.Y + OriginAlt //Alt
+            Z = UnityCoords.Y + OriginAlt //Alt
         };
 
         return toReturn;
@@ -271,10 +286,11 @@ public class GeoreferenceSystem : MonoBehaviour
         double sin_gc_psi = -sin_lat * sin_lon * cos_psi * cos_theta + cos_lon * sin_psi * cos_theta + cos_lat * sin_lon * sin_theta;
         double cos_gc_psi = -sin_lat * cos_lon * cos_psi * cos_theta - sin_lon * sin_psi * cos_theta + cos_lat * cos_lon * sin_theta;
         double psi;
-        if(sin_gc_psi != 0.0 || cos_gc_psi != 0.0)
+        if (sin_gc_psi != 0.0 || cos_gc_psi != 0.0)
         {
             psi = Math.Atan2(sin_gc_psi, cos_gc_psi);
-        }else
+        }
+        else
         {
             psi = 0.0;
         }
@@ -286,7 +302,8 @@ public class GeoreferenceSystem : MonoBehaviour
         if (sin_gc_phi != 0.0 || cos_gc_phi != 0.0)
         {
             phi = Math.Atan2(sin_gc_phi, cos_gc_phi);
-        }else
+        }
+        else
         {
             phi = 0.0;
         }
@@ -330,7 +347,8 @@ public class GeoreferenceSystem : MonoBehaviour
         if (sin_psi_local != 0.0 || cos_psi_local != 0.0)
         {
             psi = Math.Atan2(sin_psi_local, cos_psi_local);
-        }else
+        }
+        else
         {
             psi = 0.0;
         }
@@ -340,14 +358,15 @@ public class GeoreferenceSystem : MonoBehaviour
         double phi;
         if (sin_phi_local != 0.0 || cos_phi_local != 0.0)
         {
-            phi = Math.Atan2(-sin_phi_local, - cos_phi_local);
-        }else
+            phi = Math.Atan2(-sin_phi_local, -cos_phi_local);
+        }
+        else
         {
             phi = 0.0;
         }
 
-        return new Vector3Double 
-        { 
+        return new Vector3Double
+        {
             X = psi,
             Y = theta,
             Z = phi

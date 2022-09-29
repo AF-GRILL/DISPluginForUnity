@@ -443,30 +443,34 @@ public class Conversions
         CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(glm.Degrees(psiRadians), glm.Degrees(thetaRadians), glm.Degrees(phiRadians), latitudeDegrees, longitudeDegrees, out headingRadians, out pitchRadians, out rollRadians);
     }
 
-
     /// <summary>
     /// Converts the given Unreal Engine vector to be in terms of ECEF. Resulting vector will be same magnitude, but in direction of ECEF NED vectors of the given location.
     /// </summary>
     /// <param name="UnityVector">The Unity vector to be converted to ECEF coordinates</param>
+    /// <param name="GeoreferencingScript"> The GeoreferencingScript that is attached to the DIS Game Manager</param>
     /// <param name="CurrentLocation">The Unreal Engine location that the entity is at</param>
     /// <returns></returns>
-    public static Vector3 ConvertUnityVectorToECEFVector(Vector3 UnityVector, Vector3 CurrentLocation)
+    public static Vector3Double ConvertUnityVectorToECEFVector(Vector3 UnityVector, GeoreferenceSystem GeoreferencingScript, Vector3 CurrentLocation)
     {
-        Vector3 unityVector = UnityVector;
+        Vector3Double ecefVector = new Vector3Double();
 
-        // TODO: Implement Unity to/from geospatial conversions
-        //if (IsValid(GeoReferencingSystem))
-        //{
-        //    FLatLonHeightFloat llh;
-        //    FNorthEastDown nedVectors;
-        //    Conversions.CalculateLatLonHeightFromUnrealLocation(CurrentLocation, GeoReferencingSystem, llh);
-        //    Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.Latitude, llh.Longitude, nedVectors);
+        if (GeoreferencingScript)
+        {
+            dvec3 northVector, eastVector, downVector;
+            Vector3Double lla = GeoreferencingScript.UnityToLatLonAlt(CurrentLocation);
+            CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y, out northVector, out eastVector, out downVector);
 
-        //    //Convert the Unreal Engine linear velocity to be in terms of ECEF
-        //    unityVector = nedVectors.NorthVector * -unityVector.y + nedVectors.EastVector * unityVector.x - nedVectors.DownVector * unityVector.z;
-        //}
+            //Convert the Unreal Engine linear velocity to be in terms of ECEF
+            dvec3 dvecECEFVector = northVector * -UnityVector.y + eastVector * UnityVector.x - downVector * UnityVector.z;
+            ecefVector = new Vector3Double
+            {
+                X = dvecECEFVector.x,
+                Y = dvecECEFVector.y,
+                Z = dvecECEFVector.z
+            };
+        }
 
-        return unityVector;
+        return ecefVector;
     }
 
     /// <summary>

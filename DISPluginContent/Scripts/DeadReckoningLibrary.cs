@@ -385,30 +385,6 @@ public class DeadReckoningLibrary
         return entityLocation + (InverseInitialOrientationMatrix * ((R1 * entityLinearVelocity) + (R2 * BodyAccelerationVector)));
     }
 
-    /// <summary>
-    /// Get the rotation difference between the two given rotators. Done using quaternion math. Signs of the axes are updated to indicate direction of rotation.
-    /// </summary>
-    /// <param name="OldRotationYawDegrees">The old Unity yaw rotation that the entity had. Should be given in degrees.</param>
-    /// <param name="OldRotationPitchDegrees">The old Unity pitch rotation that the entity had. Should be given in degrees.</param>
-    /// <param name="OldRotationRollDegrees">The old Unity roll rotation that the entity had. Should be given in degrees.</param>
-    /// <param name="NewRotationYawDegrees">The new Unity yaw rotation that the entity had. Should be given in degrees.</param>
-    /// <param name="NewRotationPitchDegrees">The new Unity pitch rotation that the entity had. Should be given in degrees.</param>
-    /// <param name="NewRotationRollDegrees">The new Unity roll rotation that the entity had. Should be given in degrees.</param>
-    /// <returns>A Vector3 containing the Pitch, Yaw, and Roll of the rotational difference. Signed to indicate direction.</returns>
-    public static Vector3 CalculateDirectionalRotationDifference(float OldRotationYawDegrees, float OldRotationPitchDegrees, float OldRotationRollDegrees, float NewRotationYawDegrees, float NewRotationPitchDegrees, float NewRotationRollDegrees)
-    {
-        //Convert the rotators to quaternions
-        Quaternion oldQuat = Quaternion.Euler(OldRotationRollDegrees, OldRotationPitchDegrees, OldRotationYawDegrees);
-        Quaternion newQuat = Quaternion.Euler(NewRotationRollDegrees, NewRotationPitchDegrees, NewRotationYawDegrees);
-        oldQuat.Normalize();
-        newQuat.Normalize();
-
-        //Get the rotational difference between the quaternions -- Gives back direction of rotation too
-        Quaternion rotDiff = newQuat * Quaternion.Inverse(oldQuat);
-
-        return rotDiff.eulerAngles;
-    }
-
     public static Quaternion GetEntityOrientationQuaternion(double PsiRadians, double ThetaRadians, double PhiRadians)
     {
         //Abbreviations for the various angular functions
