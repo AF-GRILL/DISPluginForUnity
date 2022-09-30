@@ -119,6 +119,8 @@ public class DISSendComponent : MonoBehaviour
         LastCalculatedUnityLocation = transform.position;
         LastCalculatedUnityRotation = transform.rotation;
 
+        TimeOfLastParametersCalculation = Time.realtimeSinceStartup;
+
         //Form Entity State PDU packets
         MostRecentEntityStatePDU = FormEntityStatePDU();
         MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
@@ -319,30 +321,52 @@ public class DISSendComponent : MonoBehaviour
             Z = angularVelocity.z
         };
 
-        Vector3 linearVelocity = new Vector3();
-        Vector3 linearAcceleration = new Vector3();
-        //Apply the appropriate acceleration based on Dead Reckoning algorithm being used
-        if ((byte)DeadReckoningAlgorithm == 1 || (byte)DeadReckoningAlgorithm == 2 || (byte)DeadReckoningAlgorithm == 3 || (byte)DeadReckoningAlgorithm == 4 || (byte)DeadReckoningAlgorithm == 5)
+        //Verify close to enough time has passed to need values calculated again
+        float deltaTime = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
+        if ((deltaTime - EntityStateCalculationRate) > 0)
         {
-            CalculateECEFLinearVelocityAndAcceleration(out linearVelocity, out linearAcceleration);
-        }
-        else if((byte)DeadReckoningAlgorithm == 6 || (byte)DeadReckoningAlgorithm == 7 || (byte)DeadReckoningAlgorithm == 8 || (byte)DeadReckoningAlgorithm == 9)
-        {
-            CalculateBodyLinearVelocityAndAcceleration(angularVelocity, out linearVelocity, out linearAcceleration);
+            UpdateEntityStateCalculations();
         }
 
-        newEntityStatePDU.EntityLinearVelocity = new Vector3Float
-        {
-            X = linearVelocity.x,
-            Y = linearVelocity.y,
-            Z = linearVelocity.z
+        //Set the angular velocity of the entity
+        newEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity = new Vector3Float
+        { 
+            X = LastCalculatedAngularVelocity.x,
+            Y = LastCalculatedAngularVelocity.y,
+            Z = LastCalculatedAngularVelocity.z,
         };
-        newEntityStatePDU.DeadReckoningParameters.EntityLinearAcceleration = new Vector3Float
+
+        //Apply the appropriate linear velocity and acceleration based on Dead Reckoning algorithm being used
+        if ((byte)DeadReckoningAlgorithm == 1 || (byte)DeadReckoningAlgorithm == 2 || (byte)DeadReckoningAlgorithm == 3 || (byte)DeadReckoningAlgorithm == 4 || (byte)DeadReckoningAlgorithm == 5)
         {
-            X = linearAcceleration.x,
-            Y = linearAcceleration.y,
-            Z = linearAcceleration.z
-        };
+            newEntityStatePDU.EntityLinearVelocity = new Vector3Float
+            {
+                X = LastCalculatedECEFLinearVelocity.x,
+                Y = LastCalculatedECEFLinearVelocity.y,
+                Z = LastCalculatedECEFLinearVelocity.z
+            };
+            newEntityStatePDU.DeadReckoningParameters.EntityLinearAcceleration = new Vector3Float
+            {
+                X = LastCalculatedECEFLinearAcceleration.x,
+                Y = LastCalculatedECEFLinearAcceleration.y,
+                Z = LastCalculatedECEFLinearAcceleration.z
+            };
+        }
+        else if ((byte)DeadReckoningAlgorithm == 6 || (byte)DeadReckoningAlgorithm == 7 || (byte)DeadReckoningAlgorithm == 8 || (byte)DeadReckoningAlgorithm == 9)
+        {
+            newEntityStatePDU.EntityLinearVelocity = new Vector3Float
+            {
+                X = LastCalculatedBodyLinearVelocity.x,
+                Y = LastCalculatedBodyLinearVelocity.y,
+                Z = LastCalculatedBodyLinearVelocity.z
+            };
+            newEntityStatePDU.DeadReckoningParameters.EntityLinearAcceleration = new Vector3Float
+            {
+                X = LastCalculatedBodyLinearAcceleration.x,
+                Y = LastCalculatedBodyLinearAcceleration.y,
+                Z = LastCalculatedBodyLinearAcceleration.z
+            };
+        }
 
         newEntityStatePDU.DeadReckoningParameters.OtherParameters = DeadReckoningLibrary.FormOtherParameters(DeadReckoningAlgorithm, newEntityStatePDU.EntityOrientation, newEntityStatePDU.EntityLocation);
 
@@ -569,6 +593,13 @@ public class DISSendComponent : MonoBehaviour
 
             //Get the rotational difference between the quaternions -- Gives back direction of rotation too
             Quaternion rotDiff = Quaternion.Inverse(oldQuat) * newQuat;
+
+            //If negative, flip it
+            if (rotDiff.w < 0)
+            {
+                rotDiff = Quaternion.Inverse(rotDiff);
+                rotDiff.w *= -1;
+            }
 
             Vector3 rotationAxis;
             float rotationAngle;

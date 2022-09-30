@@ -151,14 +151,9 @@ public class Conversions
     {
         double CosTheta = glm.Cos(ThetaRadians);
         double SinTheta = glm.Sin(ThetaRadians);
-
-        dvec3 N = AxisVector;
-        dmat3 NMat = new dmat3(N.x, 0, 0,
-                               N.y, 0, 0,
-                               N.z, 0, 0);//N, dvec3.Zero, dvec3.Zero);//HERE
         
-        dmat3 NTransposeN = NMat * NMat.Transposed;
-        dmat3 NCrossN = CreateSkewMatrix(N);
+        dmat3 NTransposeN = glm.OuterProduct(AxisVector, AxisVector);
+        dmat3 NCrossN = CreateSkewMatrix(AxisVector);
 
         OutRotationMatrix = ((1 - CosTheta) * NTransposeN) + (CosTheta * dmat3.Identity) + (SinTheta * NCrossN);
     }
