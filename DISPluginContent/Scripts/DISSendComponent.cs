@@ -321,13 +321,6 @@ public class DISSendComponent : MonoBehaviour
             Z = angularVelocity.z
         };
 
-        //Verify close to enough time has passed to need values calculated again
-        float deltaTime = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
-        if ((deltaTime - EntityStateCalculationRate) > 0)
-        {
-            UpdateEntityStateCalculations();
-        }
-
         //Set the angular velocity of the entity
         newEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity = new Vector3Float
         { 
