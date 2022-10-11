@@ -121,11 +121,6 @@ public class DISSendComponent : MonoBehaviour
 
         TimeOfLastParametersCalculation = Time.realtimeSinceStartup;
 
-        //Form Entity State PDU packets
-        MostRecentEntityStatePDU = FormEntityStatePDU();
-        MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-        PreviousEntityStatePDU = MostRecentEntityStatePDU;
-
         //If the DIS Game Manager was not set, attempt to find it
         if (DISGameManager == null)
         {
@@ -137,21 +132,26 @@ public class DISSendComponent : MonoBehaviour
             pduSenderScript = DISGameManager.GetComponent<PDUSender>();
             disGameManagerScript = DISGameManager.GetComponent<DISGameManager>();
             georeferenceScript = DISGameManager.GetComponent<GeoreferenceSystem>();
-
-            //Begin play with Entity State PDU
-            if (pduSenderScript == null)
-            {
-                Debug.LogError("DISGameManager is missing a PDU Sender script. Please make sure it has one attached.");
-            }
-            else if (EntityStatePDUSendingMode != EEntityStateSendingMode.None)
-            {
-                pduSenderScript = DISGameManager.GetComponent<PDUSender>();
-                pduSenderScript.SendPdu(MostRecentEntityStatePDU);
-            }
         }
         else
         {
             Debug.LogError("Invalid DISGameManager. Please make sure one is in the world.");
+        }
+
+        //Form Entity State PDU packets
+        MostRecentEntityStatePDU = FormEntityStatePDU();
+        MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
+        PreviousEntityStatePDU = MostRecentEntityStatePDU;
+
+        //Begin play with Entity State PDU
+        if (pduSenderScript == null)
+        {
+            Debug.LogError("DISGameManager is missing a PDU Sender script. Please make sure it has one attached.");
+        }
+        else if (EntityStatePDUSendingMode != EEntityStateSendingMode.None)
+        {
+            pduSenderScript = DISGameManager.GetComponent<PDUSender>();
+            pduSenderScript.SendPdu(MostRecentEntityStatePDU);
         }
 
         InvokeRepeating("UpdateEntityStateCalculations", EntityStateCalculationRate, EntityStateCalculationRate);
@@ -169,8 +169,7 @@ public class DISSendComponent : MonoBehaviour
 
         if (deltaTime > 0)
         {
-            //Divide location offset by 100 to convert to meters
-            LastCalculatedUnityLinearVelocity = (transform.position - LastCalculatedUnityLocation) / (deltaTime * 100);
+            LastCalculatedUnityLinearVelocity = (transform.position - LastCalculatedUnityLocation) / deltaTime;
         }
 
         LastCalculatedUnityLocation = transform.position;
@@ -292,24 +291,21 @@ public class DISSendComponent : MonoBehaviour
             //Calculate the position of the entity in ECEF
             newEntityStatePDU.EntityLocation = georeferenceScript.UnityToECEF(transform.position);
 
-            // TODO: Implement Unity to/from geospatial conversions
             //Calculate the orientation of the entity in Psi, Theta, Phi
-            //Vector3Double latLonHeightMeters;
-            //Vector3Double headingPitchRollDegrees;
-            //Conversions.CalculateLatLonHeightFromUnrealLocation(transform.position, GeoReferencingSystem, latLonHeightMeters);
-            //Conversions.GetHeadingPitchRollFromUnrealRotation(transform.eulerAngles, transform.position, GeoReferencingSystem, headingPitchRollDegrees);
-            //Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees.X, headingPitchRollDegrees.Y, headingPitchRollDegrees.Z, latLonHeightMeters.X, latLonHeightMeters.Y, out double psi, out double theta, out double phi);
+            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
 
-            //newEntityStatePDU.EntityOrientation = new Orientation
-            //{
-            //    Psi = (float)psi,
-            //    Theta = (float)theta,
-            //    Phi = (float)phi
-            //};
+            newEntityStatePDU.EntityOrientation = new Orientation
+            {
+                Psi = psiThetaPhiRadians.Psi,
+                Theta = psiThetaPhiRadians.Theta,
+                Phi = psiThetaPhiRadians.Phi
+            };
         }
         else
         {
-            Debug.LogWarning("Invalid GeoReference Script. Please make sure one is attached to the DIS Game Manager.");
+            Debug.LogWarning("Invalid GeoReference. Please make sure one is attached to the DISGameManager GameObject in the world.");
         }
 
         //Set all Dead Reckoning Parameters
@@ -406,25 +402,20 @@ public class DISSendComponent : MonoBehaviour
 
         Quaternion actualOrientationQuaternion = new Quaternion();
 
-        // TODO: Implement Unity to/from geospatial conversions
-        //if (IsValid(GeoReferencingSystem))
-        //{
-        //    //Calculate the orientation of the entity in Psi, Theta, Phi
-        //    FLatLonHeightFloat latLonHeightMeters;
-        //    FHeadingPitchRoll headingPitchRollDegrees;
-        //    FPsiThetaPhi psiThetaPhiRadians;
-
-        //    Conversions.CalculateLatLonHeightFromUnrealLocation(transform.position, GeoReferencingSystem, latLonHeightMeters);
-        //    Conversions.GetHeadingPitchRollFromUnrealRotation(transform.eulerAngles, transform.position, GeoReferencingSystem, headingPitchRollDegrees);
-        //    Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, latLonHeightMeters.Latitude, latLonHeightMeters.Longitude, psiThetaPhiRadians);
-        //    // Get the entity's current orientation quaternion
-        //    actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
-        //}
-        //else
-        //{
-        //    Debug.LogWarning("Invalid GeoReference. Please make sure one is in the world."));
-        //    return false;
-        //}
+        if (georeferenceScript)
+        {
+            //Calculate the orientation of the entity in Psi, Theta, Phi
+            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+            // Get the entity's current orientation quaternion
+            actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
+        }
+        else
+        {
+            Debug.LogWarning("Invalid GeoReference. Please make sure one is attached to the DISGameManager GameObject in the world.");
+            return false;
+        }
 
         float quaternionDotProduct = Quaternion.Dot(actualOrientationQuaternion, DR_OrientationQuaternion);
 
@@ -452,25 +443,28 @@ public class DISSendComponent : MonoBehaviour
 
         dmat3 ActualOrientationMatrix = new dmat3();
 
-        // TODO: Implement Unity to/from geospatial conversions
-        //if (IsValid(GeoReferencingSystem))
-        //{
-        //    //Calculate the orientation of the entity in Psi, Theta, Phi
-        //    FLatLonHeightFloat latLonHeightMeters;
-        //    FHeadingPitchRoll headingPitchRollDegrees;
-        //    FPsiThetaPhi psiThetaPhiRadians;
+        if (georeferenceScript)
+        {
+            //Calculate the orientation of the entity in Psi, Theta, Phi
+            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+            // Get the entity's current orientation matrix
 
-        //    Conversions.CalculateLatLonHeightFromUnrealLocation(transform.position, GeoReferencingSystem, latLonHeightMeters);
-        //    Conversions.GetHeadingPitchRollFromUnrealRotation(transform.eulerAngles, transform.position, GeoReferencingSystem, headingPitchRollDegrees);
-        //    Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, latLonHeightMeters.Latitude, latLonHeightMeters.Longitude, psiThetaPhiRadians);
-        //    // Get the entity's current orientation matrix
-        //    ActualOrientationMatrix = DeadReckoningLibrary.GetEntityOrientationMatrix(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
-        //}
-        //else
-        //{
-        //    Debug.LogWarning("Invalid GeoReference. Please make sure one is in the world."));
-        //    return false;
-        //}
+            Orientation entityOrientation = new Orientation
+            {
+                Psi = psiThetaPhiRadians.Psi,
+                Theta = psiThetaPhiRadians.Theta,
+                Phi = psiThetaPhiRadians.Phi
+            };
+
+            ActualOrientationMatrix = DeadReckoningLibrary.GetEntityOrientationMatrix(entityOrientation);
+        }
+        else
+        {
+            Debug.LogWarning("Invalid GeoReference. Please make sure one is attached to the DISGameManager GameObject in the world.");
+            return false;
+        }
 
         //Calculate the rotational difference matrix and its trace
         dmat3 rotDiffMatrix = DR_OrientationMatrix.Transposed * ActualOrientationMatrix;
@@ -512,11 +506,10 @@ public class DISSendComponent : MonoBehaviour
         if (timeSinceLastCalc > 0)
         {
             Vector3 curLoc = transform.position;
-            //Divide location offset by 100 to convert to meters
-            Vector3 curUnrealLinearVelocity = (curLoc - LastCalculatedUnityLocation) / (timeSinceLastCalc * 100);
+            Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
 
             //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
-            Vector3Double ecefLinearVelocityDouble = Conversions.ConvertUnityVectorToECEFVector(curUnrealLinearVelocity, georeferenceScript, curLoc);
+            Vector3Double ecefLinearVelocityDouble = Conversions.ConvertUnityVectorToECEFVector(curUnityLinearVelocity, georeferenceScript, curLoc);
             ECEFLinearVelocity = new Vector3((float)ecefLinearVelocityDouble.X, (float)ecefLinearVelocityDouble.Y, (float)ecefLinearVelocityDouble.Z);
             Vector3Double prevECEFLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(LastCalculatedUnityLinearVelocity, georeferenceScript, LastCalculatedUnityLocation);
 
@@ -543,7 +536,7 @@ public class DISSendComponent : MonoBehaviour
         if (timeSinceLastCalc > 0)
         {
             Vector3 curLoc = transform.position;
-            Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / (timeSinceLastCalc * 100);
+            Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
 
             //Convert linear velocity vectors to be in body space --- Use inverse UE rotations to convert vectors into appropriate DIS body space
             BodyLinearVelocity = Vector3.Scale(transform.rotation * curUnityLinearVelocity, new Vector3(1, 1, -1));
@@ -600,8 +593,8 @@ public class DISSendComponent : MonoBehaviour
             rotationAngle = glm.Radians(rotationAngle);
             
             angularVelocity = (rotationAngle * rotationAxis) / timeSinceLastCalc;
-            //Swap axes as needed and invert X and Y axis
-            angularVelocity = new Vector3(-angularVelocity.z, -angularVelocity.x, angularVelocity.y);
+            //Swap axes as needed
+            angularVelocity = new Vector3(angularVelocity.z, angularVelocity.x, angularVelocity.y);
         }
 
         return angularVelocity;

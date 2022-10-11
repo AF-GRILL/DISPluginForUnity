@@ -104,8 +104,7 @@ public class GeoreferenceSystem : MonoBehaviour
 
     public Vector3Double ECEFToUnity(Vector3Double ECEF)
     {
-        Vector3Double LatLonAlt;
-        Conversions.CalculateLatLonHeightFromEcefXYZ(ECEF, out LatLonAlt);
+        Vector3Double LatLonAlt = Conversions.CalculateLatLonHeightFromEcefXYZ(ECEF);
         Vector3Double Unity = geodetic_to_flatearth(LatLonAlt);
         //TODO: Fix error in conversions.
         //This is a TEMPORARY fix so that work on other conversions can progress.
@@ -140,9 +139,23 @@ public class GeoreferenceSystem : MonoBehaviour
         };
 
         Vector3Double LatLonAlt = flatearth_to_geodetic(unityCoordsDouble);
-        Vector3Double ECEF;
-        Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt, out ECEF);
+        Vector3Double ECEF = Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt);
         return ECEF;
+    }
+
+    public FNorthEastDown GetNEDVectorsAtEngineLocation(Vector3 UnityLocation)
+    {
+        Vector3Double ecefLoc = UnityToECEF(UnityLocation);
+        Vector3Double lla = Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLoc);
+        return Conversions.CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y);
+    }
+
+    public FEastNorthUp GetENUVectorsAtEngineLocation(Vector3 UnityLocation)
+    {
+        Vector3Double ecefLoc = UnityToECEF(UnityLocation);
+        Vector3Double lla = Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLoc);
+        FNorthEastDown northEastDownVectors = Conversions.CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y);
+        return new FEastNorthUp(northEastDownVectors.EastVector, northEastDownVectors.NorthVector, -northEastDownVectors.DownVector);
     }
 
     public Vector3Double GetOriginLLA() { return Origin; }
@@ -161,7 +174,7 @@ public class GeoreferenceSystem : MonoBehaviour
             Z = OriginAlt
         };
 
-        Conversions.CalculateEcefXYZFromLatLonHeight(Origin, out OriginECEF);
+        OriginECEF = Conversions.CalculateEcefXYZFromLatLonHeight(Origin);
     }
 
     /// <summary>

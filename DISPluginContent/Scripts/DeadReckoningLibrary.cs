@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class DeadReckoningLibrary
 {
+    private static readonly double MIN_ROTATION_RATE = 0.2 * Math.PI / 180;  // minimum significant rate = 1deg/5sec
+
     public static bool DeadReckoning(EntityStatePdu EntityPduToDeadReckon, float DeltaTime, ref EntityStatePdu DeadReckonedPdu)
     {
         bool supported = true;
@@ -23,15 +25,14 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh;
-                        Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out llh);
+                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(LocalRotation.Psi, LocalRotation.Theta, LocalRotation.Phi, llh.X, llh.Y, out double psi, out double theta, out double phi);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
-                            Psi = (float)psi,
-                            Theta = (float)theta,
-                            Phi = (float)phi
+                            Psi = psiThetaPhiRadians.Psi,
+                            Theta = psiThetaPhiRadians.Theta,
+                            Phi = psiThetaPhiRadians.Phi
                         };
                     }
 
@@ -56,15 +57,14 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh;
-                        Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out llh);
+                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(LocalRotation.Psi, LocalRotation.Theta, LocalRotation.Phi, llh.X, llh.Y, out double psi, out double theta, out double phi);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
-                            Psi = (float)psi,
-                            Theta = (float)theta,
-                            Phi = (float)phi
+                            Psi = psiThetaPhiRadians.Psi,
+                            Theta = psiThetaPhiRadians.Theta,
+                            Phi = psiThetaPhiRadians.Phi
                         };
                     }
 
@@ -159,15 +159,14 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh;
-                        Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out llh);
+                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(LocalRotation.Psi, LocalRotation.Theta, LocalRotation.Phi, llh.X, llh.Y, out double psi, out double theta, out double phi);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
-                            Psi = (float)psi,
-                            Theta = (float)theta,
-                            Phi = (float)phi
+                            Psi = psiThetaPhiRadians.Psi,
+                            Theta = psiThetaPhiRadians.Theta,
+                            Phi = psiThetaPhiRadians.Phi
                         };
                     }
 
@@ -194,15 +193,14 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh;
-                        Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out llh);
+                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(LocalRotation.Psi, LocalRotation.Theta, LocalRotation.Phi, llh.X, llh.Y, out double psi, out double theta, out double phi);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
-                            Psi = (float)psi,
-                            Theta = (float)theta,
-                            Phi = (float)phi
+                            Psi = psiThetaPhiRadians.Psi,
+                            Theta = psiThetaPhiRadians.Theta,
+                            Phi = psiThetaPhiRadians.Phi
                         };
                     }
 
@@ -294,15 +292,14 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh;
-                        Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out llh);
+                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(LocalRotation.Psi, LocalRotation.Theta, LocalRotation.Phi, llh.X, llh.Y, out double psi, out double theta, out double phi);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
-                            Psi = (float)psi,
-                            Theta = (float)theta,
-                            Phi = (float)phi
+                            Psi = psiThetaPhiRadians.Psi,
+                            Theta = psiThetaPhiRadians.Theta,
+                            Phi = psiThetaPhiRadians.Phi
                         };
                     }
 
@@ -339,7 +336,7 @@ public class DeadReckoningLibrary
         Quaternion deadReckoningQuat = localQuaternion * CreateDeadReckoningQuaternion(AngularVelocity, deltaTime);
 
         float theta = (float)Math.Asin(-2 * ((deadReckoningQuat.x * deadReckoningQuat.z) - (deadReckoningQuat.w * deadReckoningQuat.y)));
-        if (theta == (Math.PI / 2))
+        if (theta == (Mathf.PI / 2))
         {
             theta = (float)1e-5;
         }
@@ -371,16 +368,28 @@ public class DeadReckoningLibrary
         dmat3 OrientationMatrix = GetEntityOrientationMatrix(entityOrientation);
         dmat3 InverseInitialOrientationMatrix = OrientationMatrix.Inverse;
 
-        // Calculate R1
         dmat3 OmegaMatrix = new dmat3(entityAngularVelocity, new dvec3(0), new dvec3(0)) * new dmat3(entityAngularVelocity, new dvec3(0), new dvec3(0)).Transposed;
-        double AccelerationMagnitude = entityAngularVelocity.Length;
-        dmat3 R1 = (((AccelerationMagnitude * deltaTime - Math.Sin(AccelerationMagnitude * deltaTime)) / Math.Pow(AccelerationMagnitude, 3)) * OmegaMatrix) +
-            ((Math.Sin(AccelerationMagnitude * deltaTime) / AccelerationMagnitude) * new dmat3(1, 0, 0, 0, 1, 0, 0, 0, 1)) +
-            (((1 - Math.Cos(AccelerationMagnitude * deltaTime)) / Math.Pow(AccelerationMagnitude, 2)) * SkewMatrix);
+        double AngularVelocityMagnitude = entityAngularVelocity.Length;
 
-        dmat3 R2 = ((((0.5 * Math.Pow(AccelerationMagnitude, 2) * Math.Pow(deltaTime, 2)) - (Math.Cos(AccelerationMagnitude * deltaTime)) - (AccelerationMagnitude * deltaTime * Math.Sin(AccelerationMagnitude * deltaTime)) + (1)) / Math.Pow(AccelerationMagnitude, 4)) * SkewMatrix * SkewMatrix.Transposed) +
-            ((((Math.Cos(AccelerationMagnitude * deltaTime)) + (AccelerationMagnitude * deltaTime * Math.Sin(AccelerationMagnitude * deltaTime)) - (1)) / (Math.Pow(AccelerationMagnitude, 2))) * new dmat3(1, 0, 0, 0, 1, 0, 0, 0, 1)) +
-            ((((Math.Sin(AccelerationMagnitude * deltaTime)) - (AccelerationMagnitude * deltaTime * Math.Cos(AccelerationMagnitude * deltaTime))) / (Math.Pow(AccelerationMagnitude, 3))) * SkewMatrix);
+        dmat3 R1 = new dmat3();
+        dmat3 R2 = new dmat3();
+
+        if (AngularVelocityMagnitude < MIN_ROTATION_RATE)
+        {
+            R1 = dmat3.Identity * deltaTime;
+            R2 = dmat3.Identity * (Math.Pow(deltaTime, 2) / 2);
+        }
+        else
+        {
+            // Calculate R1
+            R1 = (((AngularVelocityMagnitude * deltaTime - Math.Sin(AngularVelocityMagnitude * deltaTime)) / Math.Pow(AngularVelocityMagnitude, 3)) * OmegaMatrix) +
+                ((Math.Sin(AngularVelocityMagnitude * deltaTime) / AngularVelocityMagnitude) * new dmat3(1, 0, 0, 0, 1, 0, 0, 0, 1)) +
+                (((1 - Math.Cos(AngularVelocityMagnitude * deltaTime)) / Math.Pow(AngularVelocityMagnitude, 2)) * SkewMatrix);
+
+            R2 = ((((0.5 * Math.Pow(AngularVelocityMagnitude, 2) * Math.Pow(deltaTime, 2)) - (Math.Cos(AngularVelocityMagnitude * deltaTime)) - (AngularVelocityMagnitude * deltaTime * Math.Sin(AngularVelocityMagnitude * deltaTime)) + (1)) / Math.Pow(AngularVelocityMagnitude, 4)) * SkewMatrix * SkewMatrix.Transposed) +
+                ((((Math.Cos(AngularVelocityMagnitude * deltaTime)) + (AngularVelocityMagnitude * deltaTime * Math.Sin(AngularVelocityMagnitude * deltaTime)) - (1)) / (Math.Pow(AngularVelocityMagnitude, 2))) * new dmat3(1, 0, 0, 0, 1, 0, 0, 0, 1)) +
+                ((((Math.Sin(AngularVelocityMagnitude * deltaTime)) - (AngularVelocityMagnitude * deltaTime * Math.Cos(AngularVelocityMagnitude * deltaTime))) / (Math.Pow(AngularVelocityMagnitude, 3))) * SkewMatrix);
+        }
 
         return entityLocation + (InverseInitialOrientationMatrix * ((R1 * entityLinearVelocity) + (R2 * BodyAccelerationVector)));
     }
@@ -429,7 +438,7 @@ public class DeadReckoningLibrary
 
         // Special case for |Theta| = pi/2
         double CosTheta = 1e-5;
-        if (Math.Abs(orientationOut.Theta) != Math.PI / 2)
+        if (Math.Abs(orientationOut.Theta) != (Mathf.PI / 2))
         {
             CosTheta = glm.Cos(orientationOut.Theta);
         }
@@ -462,7 +471,7 @@ public class DeadReckoningLibrary
         double SinOmega = Math.Sin(AngularVelocityMagnitude * deltaTime);
 
         dmat3 DeadReckoningMatrix = (((1 - CosOmega) / Math.Pow(AngularVelocityMagnitude, 2)) * AngularVelocity) +
-            (CosOmega * new dmat3(1, 0, 0, 0, 1, 0, 0, 0, 1)) -
+            (CosOmega * dmat3.Identity) -
             (SinOmega / AngularVelocityMagnitude * Conversions.CreateSkewMatrix(entityAngularVelocity));
 
         return DeadReckoningMatrix;
@@ -609,7 +618,6 @@ public class DeadReckoningLibrary
         float LocalPitch = BitConverter.ToSingle(bytePitch, 0);
         float LocalRoll = BitConverter.ToSingle(byteRoll, 0);
 
-        // TODO: Change to psi/theta/phi instead of yaw/pitch/roll
         localRotation = new Orientation
         {
             Psi = LocalYaw,
@@ -635,7 +643,7 @@ public class DeadReckoningLibrary
         byte[] charPitch = new byte[sizeof(float)];
         byte[] charRoll = new byte[sizeof(float)];
 
-        if (DeadReckoningAlgorithm == EDeadReckoningAlgorithm.Static || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FPW || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FVW 
+        if (DeadReckoningAlgorithm == EDeadReckoningAlgorithm.Static || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FPW || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FVW
             || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FPB || DeadReckoningAlgorithm == EDeadReckoningAlgorithm.FVB)
         {
             otherParameters[0] = 1;
@@ -643,13 +651,13 @@ public class DeadReckoningLibrary
             otherParameters[1] = 0;
             otherParameters[2] = 0;
 
-            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation, out Vector3Double llh);
-            Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(EntityPsiThetaPhiRadians.Psi, EntityPsiThetaPhiRadians.Theta, EntityPsiThetaPhiRadians.Phi, llh.X, llh.Y, out double headingRadians, out double pitchRadians, out double rollRadians);
+            Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation);
+            FHeadingPitchRoll headingPitchRollRadians = Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(new FPsiThetaPhi(EntityPsiThetaPhiRadians), llh.X, llh.Y);
 
             //Convert the floats to unsigned char arrays
-            charHeading = BitConverter.GetBytes((float)headingRadians);
-            charPitch = BitConverter.GetBytes((float)pitchRadians);
-            charRoll = BitConverter.GetBytes((float)rollRadians);
+            charHeading = BitConverter.GetBytes((float)headingPitchRollRadians.Heading);
+            charPitch = BitConverter.GetBytes((float)headingPitchRollRadians.Pitch);
+            charRoll = BitConverter.GetBytes((float)headingPitchRollRadians.Roll);
 
             //Check indianness. DIS is Big Endian, so reverse the array order if in little endian
             if (BitConverter.IsLittleEndian)
@@ -664,17 +672,19 @@ public class DeadReckoningLibrary
             otherParameters[0] = 2;
 
             //Calculate the four quaternion terms
-            float cosPsiHalved = (float)Math.Cos(EntityPsiThetaPhiRadians.Psi / 2);
-            float cosThetaHalved = (float)Math.Cos(EntityPsiThetaPhiRadians.Theta / 2);
-            float cosPhiHalved = (float)Math.Cos(EntityPsiThetaPhiRadians.Phi / 2);
-            float sinPsiHalved = (float)Math.Sin(EntityPsiThetaPhiRadians.Psi / 2);
-            float sinThetaHalved = (float)Math.Sin(EntityPsiThetaPhiRadians.Theta / 2);
-            float sinPhiHalved = (float)Math.Sin(EntityPsiThetaPhiRadians.Phi / 2);
+            float cosPsiHalved = Mathf.Cos(EntityPsiThetaPhiRadians.Psi / 2);
+            float cosThetaHalved = Mathf.Cos(EntityPsiThetaPhiRadians.Theta / 2);
+            float cosPhiHalved = Mathf.Cos(EntityPsiThetaPhiRadians.Phi / 2);
+            float sinPsiHalved = Mathf.Sin(EntityPsiThetaPhiRadians.Psi / 2);
+            float sinThetaHalved = Mathf.Sin(EntityPsiThetaPhiRadians.Theta / 2);
+            float sinPhiHalved = Mathf.Sin(EntityPsiThetaPhiRadians.Phi / 2);
 
             float qu0 = cosPsiHalved * cosThetaHalved * cosPhiHalved + sinPsiHalved * sinThetaHalved * sinPhiHalved;
             float qux = cosPsiHalved * cosThetaHalved * sinPhiHalved - sinPsiHalved * sinThetaHalved * cosPhiHalved;
             float quy = cosPsiHalved * sinThetaHalved * cosPhiHalved + sinPsiHalved * cosThetaHalved * sinPhiHalved;
             float quz = sinPsiHalved * cosThetaHalved * cosPhiHalved - cosPsiHalved * sinThetaHalved * sinPhiHalved;
+
+            float Qu0 = (float)Math.Sqrt(1 - (Math.Pow(qux, 2.0) + Math.Pow(quy, 2.0) + Math.Pow(quz, 2.0)));
 
             //If qu0 is negative, invert all terms
             if (qu0 < 0)

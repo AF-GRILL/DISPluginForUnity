@@ -15,7 +15,7 @@ public class Conversions
         Vector3 unwoundVector = new Vector3(RotationDegrees.x % 360, RotationDegrees.y % 360, RotationDegrees.z % 360);
 
         //Check each axis. If axis outside -180 to 180 degree range, take shorter path
-        if(RotationDegrees.x <= -180 || RotationDegrees.x >= 180)
+        if (RotationDegrees.x <= -180 || RotationDegrees.x >= 180)
         {
             unwoundVector.x += (RotationDegrees.x <= -180) ? 360 : -360;
         }
@@ -38,11 +38,11 @@ public class Conversions
     /// <returns></returns>
     public static dmat4 CreateSkewMatrix4x4(dvec3 nVector)
     {
-        return new dmat4(new dvec4(         0,  nVector.z, -nVector.y, 0),
-                         new dvec4(-nVector.z,          0,  nVector.x, 0),
-                         new dvec4( nVector.y, -nVector.x,          0, 0),
+        return new dmat4(new dvec4(0, nVector.z, -nVector.y, 0),
+                         new dvec4(-nVector.z, 0, nVector.x, 0),
+                         new dvec4(nVector.y, -nVector.x, 0, 0),
                          dvec4.Zero);
-        
+
     }
 
     /// <summary>
@@ -52,20 +52,20 @@ public class Conversions
     /// <returns></returns>
     public static dmat3 CreateSkewMatrix(dvec3 nVector)
     {
-        return new dmat3(         0,  nVector.z, -nVector.y, 
-                         -nVector.z,          0,  nVector.x, 
-                          nVector.y, -nVector.x,          0);
+        return new dmat3(0, nVector.z, -nVector.y,
+                         -nVector.z, 0, nVector.x,
+                          nVector.y, -nVector.x, 0);
     }
 
     /// <summary>
     /// Converts DIS X, Y, Z coordinates (ECEF) to Latitude, Longitude, and Height (LLH) all in double (64-bit) precision
     /// </summary>
     /// <param name="ecefLocation">The ECEF location</param>
-    /// <param name="outLatLonHeightDegreesMeters">The converted latitude in degrees, longitude in degrees, and height in meters</param>
-    public static void CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation, out Vector3Double outLatLonHeightDegreesMeters)
+    /// <return>The converted latitude in degrees, longitude in degrees, and height in meters</return>
+    public static Vector3Double CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation)
     {
-        const double earthSemiMajorRadiusMeters = 6378137;
-        const double earthSemiMinorRadiusMeters = 6356752.3142;
+        double earthSemiMajorRadiusMeters = 6378137;
+        double earthSemiMinorRadiusMeters = 6356752.3142;
 
         double earthSemiMajorRadiusMetersSquare = Math.Pow(earthSemiMajorRadiusMeters, 2);
         double earthSemiMinorRadiusMetersSquare = Math.Pow(earthSemiMinorRadiusMeters, 2);
@@ -78,7 +78,7 @@ public class Conversions
         double sinLatitude = Math.Sin(glm.Radians(latitude));
         double height = (distFromXToY / cosLatitude) - (earthSemiMajorRadiusMetersSquare / Math.Sqrt((earthSemiMajorRadiusMetersSquare * Math.Pow(cosLatitude, 2)) + (earthSemiMinorRadiusMetersSquare * Math.Pow(sinLatitude, 2))));
 
-        outLatLonHeightDegreesMeters = new Vector3Double
+        return new Vector3Double
         {
             X = latitude,
             Y = longitude,
@@ -90,11 +90,11 @@ public class Conversions
     /// Converts Latitude, Longitude, and Height (LLH) to DIS X, Y, Z coordinates (ECEF) all in double (64-bit) precision
     /// </summary>
     /// <param name="latLonHeightDegreesMeters">The latitude in degrees, longitude in degrees, and height in meters</param>
-    /// <param name="ecefLocation">The converted ECEF location</param>
-    public static void CalculateEcefXYZFromLatLonHeight(Vector3Double latLonHeightDegreesMeters, out Vector3Double ecefLocation)
+    /// <return>The converted ECEF location</return>
+    public static Vector3Double CalculateEcefXYZFromLatLonHeight(Vector3Double latLonHeightDegreesMeters)
     {
-        const double earthSemiMajorRadiusMeters = 6378137;
-        const double earthSemiMinorRadiusMeters = 6356752.3142;
+        double earthSemiMajorRadiusMeters = 6378137;
+        double earthSemiMinorRadiusMeters = 6356752.3142;
 
         double cosLatitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.X));
         double sinLatitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.X));
@@ -104,7 +104,7 @@ public class Conversions
         double XYBaseConversion = (earthSemiMajorRadiusMeters / (Math.Sqrt(Math.Pow(cosLatitude, 2) + ((Math.Pow(earthSemiMinorRadiusMeters, 2) / Math.Pow(earthSemiMajorRadiusMeters, 2)) * Math.Pow(sinLatitude, 2))))) + latLonHeightDegreesMeters.Z;
         double ZBaseConversion = (earthSemiMinorRadiusMeters / (((Math.Sqrt(Math.Pow(cosLatitude, 2) * (Math.Pow(earthSemiMajorRadiusMeters, 2) / Math.Pow(earthSemiMinorRadiusMeters, 2)) + Math.Pow(sinLatitude, 2)))))) + latLonHeightDegreesMeters.Z;
 
-        ecefLocation = new Vector3Double
+        return new Vector3Double
         {
             X = XYBaseConversion * cosLatitude * cosLongitude,
             Y = XYBaseConversion * cosLatitude * sinLongitude,
@@ -117,17 +117,16 @@ public class Conversions
     /// </summary>
     /// <param name="AxisVector">A 3x1 vector representing the axis of rotation</param>
     /// <param name="thetaRadians">The amount to rotate given in radians</param>
-    /// <param name="outRotationMatrix">The 4x4 rotation matrix</param>
-    public static void CreateRotationMatrix4x4(dvec3 AxisVector, double thetaRadians, out dmat4 outRotationMatrix)
+    /// <return>The 4x4 rotation matrix</return>
+    public static dmat4 CreateRotationMatrix(Vector3 AxisVector, double thetaRadians)
     {
         double cosTheta = Math.Cos(thetaRadians);
         double sinTheta = Math.Sin(thetaRadians);
 
-        outRotationMatrix = dmat4.Zero;
         dmat4 N = new dmat4(new dvec4(AxisVector.x, 0, 0, 0), new dvec4(AxisVector.y, 0, 0, 0), new dvec4(AxisVector.z, 0, 0, 0), dvec4.Zero);
-        dmat4 NTransposeN = N * N.Transposed;
+        dmat4 NTransposeN = N.Transposed * N;
 
-        dmat4 NCrossX = CreateSkewMatrix4x4(AxisVector);
+        dmat4 NCrossX = CreateSkewMatrix4x4(new dvec3(AxisVector.x, AxisVector.y, AxisVector.z));
 
         dmat4 ScaledTranspose = new dmat4(NTransposeN);
         ScaledTranspose *= (1 - cosTheta);
@@ -138,7 +137,7 @@ public class Conversions
         dmat4 ScaledNCrossX = new dmat4(NCrossX);
         ScaledNCrossX *= sinTheta;
 
-        outRotationMatrix += ScaledTranspose + Identity + ScaledNCrossX;
+        return ScaledTranspose + Identity + ScaledNCrossX;
     }
 
     /// <summary>
@@ -146,34 +145,30 @@ public class Conversions
     /// </summary>
     /// <param name="AxisVector">A 3x1 vector representing the axis of rotation</param>
     /// <param name="ThetaRadians">The amount to rotate given in radians</param>
-    /// <param name="OutRotationMatrix">The 3x3 rotation matrix</param>
-    public static void CreateRotationMatrix(dvec3 AxisVector, double ThetaRadians, out dmat3 OutRotationMatrix)
+    /// <return>The 3x3 rotation matrix</return>
+    public static dmat3 CreateRotationMatrix(dvec3 AxisVector, double ThetaRadians)
     {
         double CosTheta = glm.Cos(ThetaRadians);
         double SinTheta = glm.Sin(ThetaRadians);
-        
+
         dmat3 NTransposeN = glm.OuterProduct(AxisVector, AxisVector);
         dmat3 NCrossN = CreateSkewMatrix(AxisVector);
 
-        OutRotationMatrix = ((1 - CosTheta) * NTransposeN) + (CosTheta * dmat3.Identity) + (SinTheta * NCrossN);
+        return ((1 - CosTheta) * NTransposeN) + (CosTheta * dmat3.Identity) + (SinTheta * NCrossN);
     }
 
     /// <summary>
     /// Applies the given heading, pitch, and roll in degrees to the local East North Down vectors
     /// </summary>
-    /// <param name="headingDegrees">The degrees from North of the facing direction (heading)</param>
-    /// <param name="pitchDegrees">The degrees rotated about the local X axis (pitch)</param>
-    /// <param name="rollDegrees">The degrees rotated about the local Z axis (roll)</param>
-    /// <param name="northVector">The vector pointing to the North of the Earth</param>
-    /// <param name="eastVector">The vector pointing to the East of the Earth</param>
-    /// <param name="downVector">The vector pointing toward the center of the Earth</param>
+    /// <param name="HeadingPitchRollDegrees">The degrees from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
+    /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
     /// <param name="outX">The x axis (forward) vector with the heading and pitch applied</param>
     /// <param name="outY">The y axis (right) vector with the heading and pitch applied</param>
     /// <param name="outZ">The z axis (down) vector with the heading and pitch applied</param>
-    public static void ApplyHeadingPitchRollToNorthEastDownVector(double headingDegrees, double pitchDegrees, double rollDegrees, dvec3 northVector, dvec3 eastVector, dvec3 downVector, out dvec3 outX, out dvec3 outY, out dvec3 outZ)
+    public static void ApplyHeadingPitchRollToNorthEastDownVector(FHeadingPitchRoll HeadingPitchRollDegrees, FNorthEastDown NorthEastDownVectors, out Vector3 outX, out Vector3 outY, out Vector3 outZ)
     {
-        ApplyHeadingPitchToNorthEastDownVector(headingDegrees, pitchDegrees, northVector, eastVector, downVector, out dvec3 outNorthVector, out dvec3 outEastVector, out dvec3 outDownVector);
-        ApplyRollToNorthEastDownVector(rollDegrees, outNorthVector, outEastVector, outDownVector, out outX, out outY, out outZ);
+        ApplyHeadingPitchToNorthEastDownVector(HeadingPitchRollDegrees.Heading, HeadingPitchRollDegrees.Pitch, NorthEastDownVectors, out Vector3 outNorthVector, out Vector3 outEastVector, out Vector3 outDownVector);
+        ApplyRollToNorthEastDownVector(HeadingPitchRollDegrees.Roll, new FNorthEastDown(outNorthVector, outEastVector, outDownVector), out outX, out outY, out outZ);
     }
 
     /// <summary>
@@ -181,36 +176,32 @@ public class Conversions
     /// </summary>
     /// <param name="headingDegrees">The degrees from North of the facing direction (spin left and right)</param>
     /// <param name="pitchDegrees">The degrees rotated about the local X axis (front tip up and down)</param>
-    /// <param name="northVector">The vector pointing to the North of the Earth</param>
-    /// <param name="eastVector">The vector pointing to the East of the Earth</param>
-    /// <param name="downVector">The vector pointing toward the center of the Earth</param>
+    /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
     /// <param name="outX">The x axis (forward) vector with the heading and pitch applied</param>
     /// <param name="outY">The y axis (right) vector with the heading and pitch applied</param>
     /// <param name="outZ">The z axis (down) vector with the heading and pitch applied</param>
-    public static void ApplyHeadingPitchToNorthEastDownVector(double headingDegrees, double pitchDegrees, dvec3 northVector, dvec3 eastVector, dvec3 downVector, out dvec3 outX, out dvec3 outY, out dvec3 outZ)
+    public static void ApplyHeadingPitchToNorthEastDownVector(double headingDegrees, double pitchDegrees, FNorthEastDown NorthEastDownVectors, out Vector3 outX, out Vector3 outY, out Vector3 outZ)
     {
-        RotateVectorAroundAxisByDegrees(northVector, headingDegrees, downVector, out outX);
-        RotateVectorAroundAxisByDegrees(eastVector, headingDegrees, downVector, out outY);
+        outX = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.NorthVector, headingDegrees, NorthEastDownVectors.DownVector);
+        outY = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.EastVector, headingDegrees, NorthEastDownVectors.DownVector);
 
-        RotateVectorAroundAxisByDegrees(outX, pitchDegrees, outY, out outX);
-        RotateVectorAroundAxisByDegrees(downVector, pitchDegrees, outY, out outZ);
+        outX = RotateVectorAroundAxisByDegrees(outX, pitchDegrees, outY);
+        outZ = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, pitchDegrees, outY);
     }
 
     /// <summary>
     /// Rotates the given East, North, and Up vectors by the given Heading and Pitch
     /// </summary>
     /// <param name="rollDegrees">The degrees rotated about the local Z axis (tilt left and right)</param>
-    /// <param name="northVector">The vector pointing to the North of the Earth</param>
-    /// <param name="eastVector">The vector pointing to the East of the Earth</param>
-    /// <param name="downVector">The vector pointing toward the center of the Earth</param>
+    /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
     /// <param name="outX">The x axis (forward) vector with the heading and pitch applied</param>
     /// <param name="outY">The y axis (right) vector with the heading and pitch applied</param>
     /// <param name="outZ">The z axis (down) vector with the heading and pitch applied</param>
-    public static void ApplyRollToNorthEastDownVector(double rollDegrees, dvec3 northVector, dvec3 eastVector, dvec3 downVector, out dvec3 outX, out dvec3 outY, out dvec3 outZ)
+    public static void ApplyRollToNorthEastDownVector(double rollDegrees, FNorthEastDown NorthEastDownVectors, out Vector3 outX, out Vector3 outY, out Vector3 outZ)
     {
-        outX = northVector;
-        RotateVectorAroundAxisByDegrees(eastVector, rollDegrees, northVector, out outY);
-        RotateVectorAroundAxisByDegrees(downVector, rollDegrees, northVector, out outZ);
+        outX = NorthEastDownVectors.NorthVector;
+        outY = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.EastVector, rollDegrees, NorthEastDownVectors.NorthVector);
+        outZ = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, rollDegrees, NorthEastDownVectors.NorthVector);
     }
 
     /// <summary>
@@ -219,10 +210,15 @@ public class Conversions
     /// <param name="vectorToRotate">The target vector to rotate</param>
     /// <param name="thetaDegrees">The desired amount to rotation in degrees</param>
     /// <param name="axisVector">The vector indicating the axis of rotation</param>
-    /// <param name="outRotatedVector">The resultant rotated vector</param>
-    public static void RotateVectorAroundAxisByDegrees(dvec3 vectorToRotate, double thetaDegrees, dvec3 axisVector, out dvec3 outRotatedVector)
+    /// <return>The resultant rotated vector</return>
+    public static Vector3 RotateVectorAroundAxisByDegrees(Vector3 vectorToRotate, double thetaDegrees, Vector3 axisVector)
     {
-        RotateVectorAroundAxisByRadians(vectorToRotate, glm.Radians(thetaDegrees), axisVector, out outRotatedVector);
+        return RotateVectorAroundAxisByRadians(vectorToRotate, glm.Radians(thetaDegrees), axisVector);
+    }
+
+    public static dvec3 RotateVectorAroundAxisByDegrees(dvec3 vectorToRotate, double thetaDegrees, dvec3 axisVector)
+    {
+        return RotateVectorAroundAxisByRadians(vectorToRotate, glm.Radians(thetaDegrees), axisVector);
     }
 
     /// <summary>
@@ -231,13 +227,21 @@ public class Conversions
     /// <param name="vectorToRotate">The target vector to rotate</param>
     /// <param name="thetaRadians">The desired amount to rotation in radians</param>
     /// <param name="axisVector">The vector indicating the axis of rotation</param>
-    /// <param name="outRotatedVector">The resultant rotated vector</param>
-    public static void RotateVectorAroundAxisByRadians(dvec3 vectorToRotate, double thetaRadians, dvec3 axisVector, out dvec3 outRotatedVector)
+    /// <return>The resultant rotated vector</return>
+    public static Vector3 RotateVectorAroundAxisByRadians(Vector3 vectorToRotate, double thetaRadians, Vector3 axisVector)
     {
         dmat4 VectorMatrix = new dmat4(new dvec4(vectorToRotate.x, 0, 0, 0), new dvec4(vectorToRotate.y, 0, 0, 0), new dvec4(vectorToRotate.z, 0, 0, 0), dvec4.Zero);
-        CreateRotationMatrix4x4(axisVector, thetaRadians, out dmat4 rotationMatrix);
-        dmat4 ResMatrix =  rotationMatrix * VectorMatrix;
-        outRotatedVector = new dvec3(ResMatrix.Column0);
+        dmat4 rotationMatrix = CreateRotationMatrix(axisVector, thetaRadians);
+        dmat4 ResMatrix = VectorMatrix * rotationMatrix.Transposed;
+        return new Vector3((float)ResMatrix.Row0.x, (float)ResMatrix.Row0.y, (float)ResMatrix.Row0.z);
+    }
+
+    public static dvec3 RotateVectorAroundAxisByRadians(dvec3 vectorToRotate, double thetaRadians, dvec3 axisVector)
+    {
+        dmat3 VectorMatrix = new dmat3(new dvec3(vectorToRotate.x, 0, 0), new dvec3(vectorToRotate.y, 0, 0), new dvec3(vectorToRotate.z, 0, 0));
+        dmat3 rotationMatrix = CreateRotationMatrix(axisVector, thetaRadians);
+        dmat3 ResMatrix = rotationMatrix * VectorMatrix;
+        return new dvec3(ResMatrix.Column0);
     }
 
     /// <summary>
@@ -245,259 +249,490 @@ public class Conversions
     /// </summary>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="northVector">The vector pointing to the North of the Earth</param>
-    /// <param name="eastVector">The vector pointing to the East of the Earth</param>
-    /// <param name="downVector">The vector pointing toward the center of the Earth</param>
-    public static void CalculateNorthEastDownVectorsFromLatLon(double latitudeDegrees, double longitudeDegrees, out dvec3 northVector, out dvec3 eastVector, out dvec3 downVector)
+    /// <return>The local vectors pointing North, pointing East, and toward the center of the Earth at the given latitude and longitude</return>
+    public static FNorthEastDown CalculateNorthEastDownVectorsFromLatLon(double latitudeDegrees, double longitudeDegrees)
     {
-        northVector = new dvec3(0, 0, 1);
-        eastVector = new dvec3(0, 1, 0);
-        downVector = new dvec3(-1, 0, 0);
+        FNorthEastDown NorthEastDownVectors;
+        NorthEastDownVectors.NorthVector = new Vector3(0, 0, 1);
+        NorthEastDownVectors.EastVector = new Vector3(0, 1, 0);
+        NorthEastDownVectors.DownVector = new Vector3(-1, 0, 0);
 
-        RotateVectorAroundAxisByDegrees(eastVector, longitudeDegrees, northVector, out eastVector);
-        RotateVectorAroundAxisByDegrees(downVector, longitudeDegrees, northVector, out downVector);
+        NorthEastDownVectors.EastVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.EastVector, longitudeDegrees, NorthEastDownVectors.NorthVector);
+        NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, longitudeDegrees, NorthEastDownVectors.NorthVector);
 
-        RotateVectorAroundAxisByDegrees(northVector, latitudeDegrees, -eastVector, out northVector);
-        RotateVectorAroundAxisByDegrees(downVector, latitudeDegrees, -eastVector, out downVector);
+        NorthEastDownVectors.NorthVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.NorthVector, latitudeDegrees, -NorthEastDownVectors.EastVector);
+        NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, latitudeDegrees, -NorthEastDownVectors.EastVector);
+
+        return NorthEastDownVectors;
     }
 
     /// <summary>
-    /// 
+    /// Calculates the latitude and longitude at the given East, North, and Up vectors.
     /// </summary>
-    /// <param name="northVector">The vector pointing to the North of the Earth</param>
-    /// <param name="eastVector">The vector pointing to the East of the Earth</param>
-    /// <param name="downVector">The vector pointing toward the center of the Earth</param>
+    /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    public static void CalculateLatLongFromNorthEastDownVectors(dvec3 northVector, dvec3 eastVector, dvec3 downVector, out double latitudeDegrees, out double longitudeDegrees)
+    public static void CalculateLatLonFromNorthEastDownVectors(FNorthEastDown NorthEastDownVectors, out double latitudeDegrees, out double longitudeDegrees)
     {
-        longitudeDegrees = glm.Degrees(Math.Acos(glm.Dot(new dvec3(0, 1, 0), eastVector) / eastVector.Length));
-        latitudeDegrees = glm.Degrees(Math.Acos(glm.Dot(new dvec3(0, 0, 1), northVector) / northVector.Length));
+        longitudeDegrees = glm.Degrees(Math.Acos(Vector3.Dot(new Vector3(0, 1, 0), NorthEastDownVectors.EastVector) / NorthEastDownVectors.EastVector.magnitude));
+        latitudeDegrees = glm.Degrees(Math.Acos(Vector3.Dot(new Vector3(0, 0, 1), NorthEastDownVectors.NorthVector) / NorthEastDownVectors.NorthVector.magnitude));
     }
 
     /// <summary>
     /// Calculates the DIS orientation values Psi, Theta, and Phi in degrees with the given Heading, Pitch, and Roll in degrees at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="headingDegrees">The degrees from North of the facing direction (heading)</param>
-    /// <param name="pitchDegrees">The degrees rotated about the local X axis (pitch)</param>
-    /// <param name="rollDegrees">The degrees rotated about the local Z axis (roll)</param>
+    /// <param name="HeadingPitchRollDegrees">The degrees from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="psiDegrees">The rotation about the Y axis in degrees (Psi)</param>
-    /// <param name="thetaDegrees">The rotation about the X axis in degrees (Theta)</param>
-    /// <param name="phiDegrees">The rotation about the Z axis in degrees (Phi)</param>
-    public static void CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(double headingDegrees, double pitchDegrees, double rollDegrees, double latitudeDegrees, double longitudeDegrees, out double psiDegrees, out double thetaDegrees, out double phiDegrees)
+    /// <return>The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</return>
+    public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees, out dvec3 northVector, out dvec3 eastVector, out dvec3 downVector);
+        FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees);
 
-        ApplyHeadingPitchRollToNorthEastDownVector(headingDegrees, pitchDegrees, rollDegrees, northVector, eastVector, downVector, out dvec3 X, out dvec3 Y, out _);
+        ApplyHeadingPitchRollToNorthEastDownVector(HeadingPitchRollDegrees, NorthEastDownVectors, out Vector3 X, out Vector3 Y, out _);
 
-        dvec3 X0 = new dvec3(1, 0, 0);
-        dvec3 Y0 = new dvec3(0, 1, 0);
-        dvec3 Z0 = new dvec3(0, 0, 1);
+        Vector3 X0 = new Vector3(1, 0, 0);
+        Vector3 Y0 = new Vector3(0, 1, 0);
+        Vector3 Z0 = new Vector3(0, 0, 1);
 
-        psiDegrees = glm.Degrees(Math.Atan2(glm.Dot(X, Y0), glm.Dot(X, X0)));
-        thetaDegrees = glm.Degrees(Math.Atan2(-glm.Dot(X, Z0), Math.Sqrt(Math.Pow(glm.Dot(X, X0), 2) + Math.Pow(glm.Dot(X, Y0), 2))));
+        FPsiThetaPhi psiThetaPhiDegrees;
+        psiThetaPhiDegrees.Psi = (float)glm.Degrees(Math.Atan2(Vector3.Dot(X, Y0), Vector3.Dot(X, X0)));
+        psiThetaPhiDegrees.Theta = (float)glm.Degrees(Math.Atan2(-Vector3.Dot(X, Z0), Math.Sqrt(Math.Pow(Vector3.Dot(X, X0), 2) + Math.Pow(Vector3.Dot(X, Y0), 2))));
 
-        northVector = X0;
-        eastVector = Y0;
-        downVector = Z0;
+        NorthEastDownVectors.NorthVector = X0;
+        NorthEastDownVectors.EastVector = Y0;
+        NorthEastDownVectors.DownVector = Z0;
 
-        ApplyHeadingPitchToNorthEastDownVector(psiDegrees, thetaDegrees, northVector, eastVector, downVector, out _, out dvec3 Y2, out dvec3 Z2);
+        ApplyHeadingPitchToNorthEastDownVector(psiThetaPhiDegrees.Psi, psiThetaPhiDegrees.Theta, NorthEastDownVectors, out _, out Vector3 Y2, out Vector3 Z2);
 
-        phiDegrees = glm.Degrees(Math.Atan2(glm.Dot(Y, Z2), glm.Dot(Y, Y2)));
+        psiThetaPhiDegrees.Phi = (float)glm.Degrees(Math.Atan2(Vector3.Dot(Y, Z2), Vector3.Dot(Y, Y2)));
+
+        return psiThetaPhiDegrees;
     }
 
     /// <summary>
     /// Calculates the DIS orientation values Psi, Theta, and Phi in radians with the given Heading, Pitch, and Roll in radians at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="headingRadians">The radians from North of the facing direction (heading)</param>
-    /// <param name="pitchRadians">The radians rotated about the local X axis (pitch)</param>
-    /// <param name="rollRadians">The radians rotated about the local Z axis (roll)</param>
+    /// <param name="HeadingPitchRollRadians">The radians from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="psiRadians">The rotation about the Y axis in radians (Psi)</param>
-    /// <param name="thetaRadians">The rotation about the X axis in radians (Theta)</param>
-    /// <param name="phiRadians">The rotation about the Z axis in radians (Phi)</param>
-    public static void CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(double headingRadians, double pitchRadians, double rollRadians, double latitudeDegrees, double longitudeDegrees, out double psiRadians, out double thetaRadians, out double phiRadians)
+    /// <return>The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</return>
+    public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(glm.Degrees(headingRadians), glm.Degrees(pitchRadians), glm.Degrees(rollRadians), latitudeDegrees, longitudeDegrees, out psiRadians, out thetaRadians, out phiRadians);
+        FHeadingPitchRoll HeadingPitchRollDegrees;
+        HeadingPitchRollDegrees.Heading = glm.Degrees(HeadingPitchRollRadians.Heading);
+        HeadingPitchRollDegrees.Pitch = glm.Degrees(HeadingPitchRollRadians.Pitch);
+        HeadingPitchRollDegrees.Roll = glm.Degrees(HeadingPitchRollRadians.Roll);
+
+        return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
     }
 
     /// <summary>
     /// Calculates the DIS orientation values Psi, Theta, and Phi in radians with the given Heading, Pitch, and Roll in degrees at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="headingDegrees">The degrees from North of the facing direction (heading)</param>
-    /// <param name="pitchDegrees">The degrees rotated about the local X axis (pitch)</param>
-    /// <param name="rollDegrees">The degrees rotated about the local Z axis (roll)</param>
+    /// <param name="HeadingPitchRollDegrees">The degrees from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="psiRadians">The rotation about the Y axis in radians (Psi)</param>
-    /// <param name="thetaRadians">The rotation about the X axis in radians (Theta)</param>
-    /// <param name="phiRadians">The rotation about the Z axis in radians (Phi)</param>
-    public static void CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(double headingDegrees, double pitchDegrees, double rollDegrees, double latitudeDegrees, double longitudeDegrees, out double psiRadians, out double thetaRadians, out double phiRadians)
+    /// <return>The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</return>
+    public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingDegrees, pitchDegrees, rollDegrees, latitudeDegrees, longitudeDegrees, out double psiDegrees, out double thetaDegrees, out double phiDegrees);
-        psiRadians = glm.Radians(psiDegrees);
-        thetaRadians = glm.Radians(thetaDegrees);
-        phiRadians = glm.Radians(phiDegrees);
+        FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
+        psiThetaPhiRadians.Psi = glm.Radians(psiThetaPhiRadians.Psi);
+        psiThetaPhiRadians.Theta = glm.Radians(psiThetaPhiRadians.Theta);
+        psiThetaPhiRadians.Phi = glm.Radians(psiThetaPhiRadians.Phi);
+
+        return psiThetaPhiRadians;
     }
 
     /// <summary>
     /// Calculates the DIS orientation values Psi, Theta, and Phi in degrees with the given Heading, Pitch, and Roll in radians at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="headingRadians">The radians from North of the facing direction (heading)</param>
-    /// <param name="pitchRadians">The radians rotated about the local X axis (pitch)</param>
-    /// <param name="rollRadians">The radians rotated about the local Z axis (roll)</param>
+    /// <param name="HeadingPitchRollRadians">The radians from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="psiDegrees">The rotation about the Y axis in degrees (Psi)</param>
-    /// <param name="thetaDegrees">The rotation about the X axis in degrees (Theta)</param>
-    /// <param name="phiDegrees">The rotation about the Z axis in degrees (Phi)</param>
-    public static void CalculatePsiThetaPhiDegreesFromHeadingPitchRollRadiansAtLatLon(double headingRadians, double pitchRadians, double rollRadians, double latitudeDegrees, double longitudeDegrees, out double psiDegrees, out double thetaDegrees, out double phiDegrees)
+    /// <return>The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</return>
+    public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(glm.Degrees(headingRadians), glm.Degrees(pitchRadians), glm.Degrees(rollRadians), latitudeDegrees, longitudeDegrees, out psiDegrees, out thetaDegrees, out phiDegrees);
+        FHeadingPitchRoll headingPitchRollDegrees;
+        headingPitchRollDegrees.Heading = glm.Degrees(HeadingPitchRollRadians.Heading);
+        headingPitchRollDegrees.Pitch = glm.Degrees(HeadingPitchRollRadians.Pitch);
+        headingPitchRollDegrees.Roll = glm.Degrees(HeadingPitchRollRadians.Roll);
+
+        return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
     }
 
     /// <summary>
     /// Calculates the Heading, Pitch, and Roll in degrees from the given DIS orientation values Psi, Theta, and Phi in degrees at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="psiDegrees">The rotation about the Y axis in degrees (Psi)</param>
-    /// <param name="thetaDegrees">The rotation about the X axis in degrees (Theta)</param>
-    /// <param name="phiDegrees">The rotation about the Z axis in degrees (Phi)</param>
+    /// <param name="psiThetaPhiDegrees">The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="headingDegrees">The degrees from North of the facing direction (heading)</param>
-    /// <param name="pitchDegrees">The degrees rotated about the local X axis (pitch)</param>
-    /// <param name="rollDegrees">The degrees rotated about the local Z axis (roll)</param>
-    public static void CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(double psiDegrees, double thetaDegrees, double phiDegrees, double latitudeDegrees, double longitudeDegrees, out double headingDegrees, out double pitchDegrees, out double rollDegrees)
+    /// <return>The degrees from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
+    public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees, out dvec3 northVector, out dvec3 eastVector, out dvec3 downVector);
+        FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees);
 
-        dvec3 x0 = new dvec3(1, 0, 0);
-        dvec3 y0 = new dvec3(0, 1, 0);
-        dvec3 z0 = new dvec3(0, 0, 1);
+        Vector3 x0 = new Vector3(1, 0, 0);
+        Vector3 y0 = new Vector3(0, 1, 0);
+        Vector3 z0 = new Vector3(0, 0, 1);
 
-        ApplyHeadingPitchRollToNorthEastDownVector(psiDegrees, thetaDegrees, phiDegrees, x0, y0, z0, out dvec3 x3, out dvec3 y3, out _);
+        FNorthEastDown StartingVectorsForRotation = new FNorthEastDown(x0, y0, z0);
 
-        headingDegrees = glm.Degrees(Math.Atan2(glm.Dot(x3, eastVector), glm.Dot(x3, northVector)));
-        pitchDegrees = glm.Degrees(Math.Atan2(-glm.Dot(x3, downVector), Math.Sqrt(Math.Pow(glm.Dot(x3, eastVector), 2) + Math.Pow(glm.Dot(x3, northVector), 2))));
+        FHeadingPitchRoll headingPitchRollTemp = new FHeadingPitchRoll(psiThetaPhiDegrees.Psi, psiThetaPhiDegrees.Theta, psiThetaPhiDegrees.Phi);
 
-        ApplyHeadingPitchToNorthEastDownVector(headingDegrees, pitchDegrees, northVector, eastVector, downVector, out _, out dvec3 y2, out dvec3 z2);
-        rollDegrees = glm.Degrees(Math.Atan2(glm.Dot(y3, z2), glm.Dot(y3, y2)));
+        ApplyHeadingPitchRollToNorthEastDownVector(headingPitchRollTemp, StartingVectorsForRotation, out Vector3 x3, out Vector3 y3, out _);
+
+        FHeadingPitchRoll headingPitchRollDegrees;
+        headingPitchRollDegrees.Heading = (float)glm.Degrees(Math.Atan2(Vector3.Dot(x3, NorthEastDownVectors.EastVector), Vector3.Dot(x3, NorthEastDownVectors.NorthVector)));
+        headingPitchRollDegrees.Pitch = (float)glm.Degrees(Math.Atan2(-Vector3.Dot(x3, NorthEastDownVectors.DownVector), Math.Sqrt(Math.Pow(Vector3.Dot(x3, NorthEastDownVectors.EastVector), 2) + Math.Pow(Vector3.Dot(x3, NorthEastDownVectors.NorthVector), 2))));
+
+        ApplyHeadingPitchToNorthEastDownVector(headingPitchRollDegrees.Heading, headingPitchRollDegrees.Pitch, NorthEastDownVectors, out _, out Vector3 y2, out Vector3 z2);
+        headingPitchRollDegrees.Roll = (float)glm.Degrees(Math.Atan2(Vector3.Dot(y3, z2), Vector3.Dot(y3, y2)));
+
+        return headingPitchRollDegrees;
     }
 
     /// <summary>
     /// Calculates the Heading, Pitch, and Roll in radians from the given DIS orientation values Psi, Theta, and Phi in radians at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="psiDegrees">The rotation about the Y axis in degrees (Psi)</param>
-    /// <param name="thetaDegrees">The rotation about the X axis in degrees (Theta)</param>
-    /// <param name="phiDegrees">The rotation about the Z axis in degrees (Phi)</param>
+    /// <param name="psiThetaPhiDegrees">The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="headingRadians">The radians from North of the facing direction (heading)</param>
-    /// <param name="pitchRadians">The radians rotated about the local X axis (pitch)</param>
-    /// <param name="rollRadians">The radians rotated about the local Z axis (roll)</param>
-    public static void CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(double psiDegrees, double thetaDegrees, double phiDegrees, double latitudeDegrees, double longitudeDegrees, out double headingRadians, out double pitchRadians, out double rollRadians)
+    /// <return>The radians from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
+    public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiDegrees, thetaDegrees, phiDegrees, latitudeDegrees, longitudeDegrees, out double headingDegrees, out double pitchDegrees, out double rollDegrees);
-        headingRadians = glm.Radians(headingDegrees);
-        pitchRadians = glm.Radians(pitchDegrees);
-        rollRadians = glm.Radians(rollDegrees);
+        FHeadingPitchRoll headingPitchRollRadians = CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
+        headingPitchRollRadians.Heading = glm.Radians(headingPitchRollRadians.Heading);
+        headingPitchRollRadians.Pitch = glm.Radians(headingPitchRollRadians.Pitch);
+        headingPitchRollRadians.Roll = glm.Radians(headingPitchRollRadians.Roll);
+
+        return headingPitchRollRadians;
     }
 
     /// <summary>
     /// Calculates the Heading, Pitch, and Roll in degrees from the given DIS orientation values Psi, Theta, and Phi in radians at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="psiRadians">The rotation about the Y axis in radians (Psi)</param>
-    /// <param name="thetaRadians">The rotation about the X axis in radians (Theta)</param>
-    /// <param name="phiRadians">The rotation about the Z axis in radians (Phi)</param>
+    /// <param name="psiThetaPhiRadians">The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="headingDegrees"></param>
-    /// <param name="pitchDegrees"></param>
-    /// <param name="rollDegrees"></param>
-    public static void CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(double psiRadians, double thetaRadians, double phiRadians, double latitudeDegrees, double longitudeDegrees, out double headingDegrees, out double pitchDegrees, out double rollDegrees)
+    /// <return>The degrees from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
+    public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(glm.Degrees(psiRadians), glm.Degrees(thetaRadians), glm.Degrees(phiRadians), latitudeDegrees, longitudeDegrees, out headingDegrees, out pitchDegrees, out rollDegrees);
+        FPsiThetaPhi psiThetaPhiDegrees;
+        psiThetaPhiDegrees.Psi = glm.Degrees(psiThetaPhiRadians.Psi);
+        psiThetaPhiDegrees.Theta = glm.Degrees(psiThetaPhiRadians.Theta);
+        psiThetaPhiDegrees.Phi = glm.Degrees(psiThetaPhiRadians.Phi);
+
+        return CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
     }
 
     /// <summary>
     /// Calculates the Heading, Pitch, and Roll in radians from the given DIS orientation values Psi, Theta, and Phi in degrees at the given Latitude and Longitude.
     /// </summary>
-    /// <param name="psiRadians">The rotation about the Y axis in radians (Psi)</param>
-    /// <param name="thetaRadians">The rotation about the X axis in radians (Theta)</param>
-    /// <param name="phiRadians">The rotation about the Z axis in radians (Phi)</param>
+    /// <param name="psiThetaPhiRadians">The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</param>
     /// <param name="latitudeDegrees">The target latitude given in degrees</param>
     /// <param name="longitudeDegrees">The target longitude given in degrees</param>
-    /// <param name="headingRadians">The radians from North of the facing direction (heading)</param>
-    /// <param name="pitchRadians">The radians rotated about the local X axis (pitch)</param>
-    /// <param name="rollRadians">The radians rotated about the local Z axis (roll)</param>
-    public static void CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(double psiRadians, double thetaRadians, double phiRadians, double latitudeDegrees, double longitudeDegrees, out double headingRadians, out double pitchRadians, out double rollRadians)
+    /// <return>The radians from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
+    public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, double latitudeDegrees, double longitudeDegrees)
     {
-        CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(glm.Degrees(psiRadians), glm.Degrees(thetaRadians), glm.Degrees(phiRadians), latitudeDegrees, longitudeDegrees, out headingRadians, out pitchRadians, out rollRadians);
+        FPsiThetaPhi psiThetaPhiDegrees;
+        psiThetaPhiDegrees.Psi = glm.Degrees(psiThetaPhiRadians.Psi);
+        psiThetaPhiDegrees.Theta = glm.Degrees(psiThetaPhiRadians.Theta);
+        psiThetaPhiDegrees.Phi = glm.Degrees(psiThetaPhiRadians.Phi);
+
+        return CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
     }
 
     /// <summary>
-    /// Converts the given Unreal Engine vector to be in terms of ECEF. Resulting vector will be same magnitude, but in direction of ECEF NED vectors of the given location.
+    /// Get the Unity rotation from the given Heading, Pitch, Roll rotation in degrees.
+    /// </summary>
+    /// <param name="HeadingPitchRollDegrees">The Heading, Pitch, Roll rotation in degrees to get the Unity rotation from.</param>
+    /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
+    /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
+    /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
+    public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    {
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return Vector3.zero;
+        }
+
+        FHeadingPitchRoll headingPitchRollRadians;
+        headingPitchRollRadians.Heading = glm.Radians(HeadingPitchRollDegrees.Heading);
+        headingPitchRollRadians.Pitch = glm.Radians(HeadingPitchRollDegrees.Pitch);
+        headingPitchRollRadians.Roll = glm.Radians(HeadingPitchRollDegrees.Roll);
+
+        return GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(headingPitchRollRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Get the Unity rotation from the given Heading, Pitch, Roll rotation in radians.
+    /// </summary>
+    /// <param name="HeadingPitchRollRadians">The Heading, Pitch, Roll rotation in radians to get the Unity rotation from.</param>
+    /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
+    /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
+    /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
+    public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    {
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return Vector3.zero;
+        }
+
+        FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(HeadingPitchRollRadians, LatitudeDegrees, LongitudeDegrees);
+
+        return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Get the Unity rotation from the given Psi, Theta, Phi rotation in radians.
+    /// </summary>
+    /// <param name="PsiThetaPhiDegrees">The Psi, Theta, Phi rotation in degrees to get the Unity rotation from.</param>
+    /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
+    /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
+    /// <return>The Unity rotation of the given Psi, Theta, Phi rotation</return>
+    public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    {
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return Vector3.zero;
+        }
+
+        FPsiThetaPhi psiThetaPhiRadians;
+        psiThetaPhiRadians.Psi = glm.Radians(PsiThetaPhiDegrees.Psi);
+        psiThetaPhiRadians.Theta = glm.Radians(PsiThetaPhiDegrees.Theta);
+        psiThetaPhiRadians.Phi = glm.Radians(PsiThetaPhiDegrees.Phi);
+
+        return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Get the Unity rotation from the given Psi, Theta, Phi rotation in radians.
+    /// </summary>
+    /// <param name="PsiThetaPhiRadians">The Psi, Theta, Phi rotation in radians to get the Unity rotation from.</param>
+    /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
+    /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
+    /// <returns>The Unity rotation of the given Psi, Theta, Phi rotation</returns>
+    public static Vector3 GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi PsiThetaPhiRadians, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    {
+        Vector3 unityRotation = Vector3.zero;
+
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return unityRotation;
+        }
+
+        FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(LatitudeDegrees, LongitudeDegrees);
+
+        //Get NED of the world origin
+        FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(new Vector3(0, 0, 0));
+        originNorthEastDown.DownVector *= -1;
+
+        // Get the rotational difference between calculated NED and Unity origin NED
+        float XAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.EastVector, originNorthEastDown.EastVector);
+        float YAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.DownVector, originNorthEastDown.DownVector);
+        float ZAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.NorthVector, originNorthEastDown.NorthVector);
+
+        FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
+
+        unityRotation.z = HeadingPitchRollDegrees.Roll + XAxisRotationAngle;
+        unityRotation.x = HeadingPitchRollDegrees.Pitch + YAxisRotationAngle;
+        //Heading of 0 is East, but heading of 0 in Unity is North. Subtract 90 to make up for the offset
+        unityRotation.y = HeadingPitchRollDegrees.Heading + ZAxisRotationAngle - 90;
+
+        return unityRotation;
+    }
+
+    /// <summary>
+    /// Converts the given Unity Engine vector to be in terms of ECEF. Resulting vector will be same magnitude, but in direction of ECEF NED vectors of the given location.
     /// </summary>
     /// <param name="UnityVector">The Unity vector to be converted to ECEF coordinates</param>
     /// <param name="GeoreferencingScript"> The GeoreferencingScript that is attached to the DIS Game Manager</param>
-    /// <param name="CurrentLocation">The Unreal Engine location that the entity is at</param>
-    /// <returns></returns>
+    /// <param name="CurrentLocation">The Unity Engine location that the entity is at</param>
+    /// <returns>A vector that is terms of ECEF or the same vector if the Georeference script is invalid.</returns>
     public static Vector3Double ConvertUnityVectorToECEFVector(Vector3 UnityVector, GeoreferenceSystem GeoreferencingScript, Vector3 CurrentLocation)
     {
-        Vector3Double ecefVector = new Vector3Double();
+        Vector3Double eceVector3 = new Vector3Double();
 
         if (GeoreferencingScript)
         {
-            dvec3 northVector, eastVector, downVector;
             Vector3Double lla = GeoreferencingScript.UnityToLatLonAlt(CurrentLocation);
-            CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y, out northVector, out eastVector, out downVector);
+            FNorthEastDown northEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y);
 
-            //Convert the Unreal Engine linear velocity to be in terms of ECEF
-            dvec3 dvecECEFVector = northVector * -UnityVector.y + eastVector * UnityVector.x - downVector * UnityVector.z;
-            ecefVector = new Vector3Double
+            //Convert the Unity Engine linear velocity to be in terms of ECEF
+            Vector3 dvecECEVector3 = northEastDownVectors.NorthVector * -UnityVector.y + northEastDownVectors.EastVector * UnityVector.x - northEastDownVectors.DownVector * UnityVector.z;
+            eceVector3 = new Vector3Double
             {
-                X = dvecECEFVector.x,
-                Y = dvecECEFVector.y,
-                Z = dvecECEFVector.z
+                X = dvecECEVector3.x,
+                Y = dvecECEVector3.y,
+                Z = dvecECEVector3.z
             };
         }
 
-        return ecefVector;
+        return eceVector3;
+    }
+
+    /// <summary>
+    /// Gets Unity rotation from a DIS entity state PDU
+    /// </summary>
+    /// <param name="EntityStatePduIn">The DIS PDU indicating the current state of the DIS entity</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <returns>The rotation of the entity in Unity</returns>
+    public static Vector3 GetUnityRotationFromEntityStatePdu(EntityStatePdu EntityStatePduIn, GeoreferenceSystem GeoReferencingSystem)
+    {
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return Vector3.zero;
+        }
+
+        FPsiThetaPhi PsiThetaPhiRadians = new FPsiThetaPhi(EntityStatePduIn.EntityOrientation);
+
+        Vector3Double lla = CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation);
+
+        return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.X, lla.Y, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Gets the Unity X, Y, Z coordinates and rotation from a DIS entity state PDU. Location values returned change depending on if GeoReferencing Subsystem is set to Flat Earth or Round Earth.
+    /// </summary>
+    /// <param name="EntityStatePdu">The DIS PDU indicating the current state of the DIS entity</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <param name="UnityLocation">The location of the entity in Unity</param>
+    /// <param name="UnityRotation">The rotation of the entity in Unity</param>
+    public static void GetUnityLocationAndOrientationFromEntityStatePdu(EntityStatePdu EntityStatePdu, GeoreferenceSystem GeoReferencingSystem, out Vector3Double UnityLocation, out Vector3 UnityRotation)
+    {
+        if (GeoReferencingSystem == null)
+        {
+            UnityLocation = new Vector3Double();
+            UnityRotation = Vector3.zero;
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return;
+        }
+
+        UnityLocation = GeoReferencingSystem.ECEFToUnity(EntityStatePdu.EntityLocation);
+        UnityRotation = GetUnityRotationFromEntityStatePdu(EntityStatePdu, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Gets the Heading, Pitch, and Roll in degrees of the given Unity rotation at the given Unity location
+    /// </summary>
+    /// <param name="UnityRotation">The Unity rotation in world space</param>
+    /// <param name="UnityLocation">The Unity location in world space</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <returns>The heading from North, pitch, and roll in degrees</returns>
+    public static FHeadingPitchRoll GetHeadingPitchRollFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
+    {
+        FHeadingPitchRoll headingPitchRoll = new FHeadingPitchRoll();
+
+        if (GeoReferencingSystem == null)
+        {
+            Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
+            return headingPitchRoll;
+        }
+
+        FNorthEastDown NorthEastDownVectors = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(UnityLocation);
+
+        //Get NED of the world origin
+        FNorthEastDown OriginNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
+
+        // Get the rotational difference between calculated NED and Unity origin NED
+        float XAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.EastVector, OriginNorthEastDown.EastVector)));
+        float YAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.DownVector, OriginNorthEastDown.DownVector)));
+        float ZAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.NorthVector, OriginNorthEastDown.NorthVector)));
+
+        headingPitchRoll.Roll = UnityRotation.z - XAxisRotationAngle;
+        headingPitchRoll.Pitch = UnityRotation.x - YAxisRotationAngle;
+        //Heading of 0 is East, but heading of 0 in Unity is North. Add 90 to make up for the offset
+        headingPitchRoll.Heading = UnityRotation.y - ZAxisRotationAngle + 90;
+
+        return headingPitchRoll;
+    }
+
+    /// <summary>
+    /// Gets the Psi (Yaw), Theta (Pitch), and Phi (Roll) in degrees of the given Unity rotation at the given Unity location
+    /// </summary>
+    /// <param name="UnityRotation">The Unity rotation in world space</param>
+    /// <param name="UnityLocation">The Unity location in world space</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <returns>The Psi (Yaw), Theta (Pitch), and Phi (Roll) in degrees</returns>
+    public static FPsiThetaPhi GetPsiThetaPhiDegreesFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
+    {
+        FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
+        Vector3Double lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
+
+        return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+    }
+
+    /// <summary>
+    /// Gets the Psi (Yaw), Theta (Pitch), and Phi (Roll) in radians of the given Unity rotation at the given Unity location
+    /// </summary>
+    /// <param name="UnityRotation">The Unity rotation in world space</param>
+    /// <param name="UnityLocation">The Unity location in world space</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <returns>The Psi (Yaw), Theta (Pitch), and Phi (Roll) in radians</returns>
+    public static FPsiThetaPhi GetPsiThetaPhiRadiansFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
+    {
+        FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
+        Vector3Double lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
+
+        return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+    }
+
+    /// <summary>
+    /// Gets the ECEF location and the Psi (Yaw), Theta (Pitch), and Phi (Roll) in degrees of the given Unity rotation at the given Unity location
+    /// </summary>
+    /// <param name="UnityRotation">The Unity rotation in world space</param>
+    /// <param name="UnityLocation">The Unity location in world space</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <param name="EcefXYZ">The ECEF location of the given Unity location.</param>
+    /// <param name="PsiThetaPhiDegrees">The Psi (Yaw), Theta (Pitch), and Phi (Roll) in degrees</param>
+    public static void GetEcefXYZAndPsiThetaPhiDegreesFromUnity(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem, out Vector3Double EcefXYZ, out FPsiThetaPhi PsiThetaPhiDegrees)
+    {
+        EcefXYZ = GeoReferencingSystem.UnityToECEF(UnityLocation);
+        PsiThetaPhiDegrees = GetPsiThetaPhiDegreesFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
+    }
+
+    /// <summary>
+    /// Gets the ECEF location and the Psi (Yaw), Theta (Pitch), and Phi (Roll) in radians of the given Unity rotation at the given Unity location
+    /// </summary>
+    /// <param name="UnityRotation">The Unity rotation in world space</param>
+    /// <param name="UnityLocation">The Unity location in world space</param>
+    /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
+    /// <param name="EcefXYZ">The ECEF location of the given Unity location.</param>
+    /// <param name="PsiThetaPhiRadians">The Psi (Yaw), Theta (Pitch), and Phi (Roll) in radians</param>
+    public static void GetEcefXYZAndPsiThetaPhiRadiansFromUnity(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem, out Vector3Double EcefXYZ, out FPsiThetaPhi PsiThetaPhiRadians)
+    {
+        EcefXYZ = GeoReferencingSystem.UnityToECEF(UnityLocation);
+        PsiThetaPhiRadians = GetPsiThetaPhiRadiansFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
     }
 
     /// <summary>
     /// Get the East, North, and Up vectors from the North, East, and Down vector struct
     /// </summary>
-    /// <param name="northVector">The North vectors representing the current orientation</param>
-    /// <param name="eastVector">The East vectors representing the current orientation</param>
-    /// <param name="downVector">The Down vectors representing the current orientation</param>
-    /// <param name="outEastVector">The resulting East vectors representing the current orientation</param>
-    /// <param name="outNorthVector">The resulting North vectors representing the current orientation</param>
-    /// <param name="outUpVector">The resulting Up vectors representing the current orientation</param>
-    public static void GetEastNorthUpVectorsFromNorthEastDownVectors(dvec3 northVector, dvec3 eastVector, dvec3 downVector, out dvec3 outEastVector, out dvec3 outNorthVector, out dvec3 outUpVector)
+    /// <param name="NorthEastDownVectors">The North, East, and Down vectors representing the current orientation</param>
+    /// <returns>The resulting East, North, and Up vectors representing the current orientation</returns>
+    public static FEastNorthUp GetEastNorthUpVectorsFromNorthEastDownVectors(FNorthEastDown NorthEastDownVectors)
     {
-        outEastVector = eastVector;
-        outNorthVector = northVector;
-        outUpVector = -downVector;
+        return new FEastNorthUp(NorthEastDownVectors.EastVector, NorthEastDownVectors.NorthVector, -NorthEastDownVectors.DownVector);
     }
 
     /// <summary>
     /// Get the North, East, and Down vectors from the East, North, and Up vectors
     /// </summary>
-    /// <param name="eastVector">The East vectors representing the current orientation</param>
-    /// <param name="northVector">The North vectors representing the current orientation</param>
-    /// <param name="upVector">The Up vectors representing the current orientation</param>
-    /// <param name="outNorthVector">The resulting North vectors representing the current orientation</param>
-    /// <param name="outEastVector">The resulting East vectors representing the current orientation</param>
-    /// <param name="outDownVector">The resulting Down vectors representing the current orientation</param>
-    public static void GetNorthEastDownVectorsFromEastNorthUpVectors(dvec3 eastVector, dvec3 northVector, dvec3 upVector, out dvec3 outNorthVector, out dvec3 outEastVector, out dvec3 outDownVector)
+    /// <param name="EastNorthUpVectors">The East, North, and Up vectors representing the current orientation</param>
+    /// <returns>The resulting North, East, and Down vectors representing the current orientation</returns>
+    public static FNorthEastDown GetNorthEastDownVectorsFromEastNorthUpVectors(FEastNorthUp EastNorthUpVectors)
     {
-        outNorthVector = northVector;
-        outEastVector = eastVector;
-        outDownVector = -upVector;
+        return new FNorthEastDown(EastNorthUpVectors.NorthVector, EastNorthUpVectors.EastVector, -EastNorthUpVectors.UpVector);
     }
 
 }

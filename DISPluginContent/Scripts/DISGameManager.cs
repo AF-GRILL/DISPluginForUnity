@@ -124,13 +124,20 @@ public class DISGameManager : MonoBehaviour
                     Quaternion spawnRotation = Quaternion.Euler(0, 0, 0);
                     if (georeferenceScript)
                     {
-                        Vector3Double unityLoc = georeferenceScript.ECEFToUnity(entityStatePdu.EntityLocation);
+                        Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(entityStatePdu, georeferenceScript, out Vector3Double unityLoc, out Vector3 unityRot);
                         spawnPosition = new Vector3((float)unityLoc.X, (float)unityLoc.Y, (float)unityLoc.Z);
-
-                        // TODO: Add in rotation conversion going from ESPDU Psi, Theta, Phi to Unity rot
+                        spawnRotation = Quaternion.Euler(unityRot);
                     }
 
-                    GameObject newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation, DISEntityParentContainer.transform);
+                    GameObject newGameObject;
+                    if (DISEntityParentContainer)
+                    {
+                        newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation, DISEntityParentContainer.transform);
+                    }
+                    else
+                    {
+                        newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation);
+                    }
 
                     //Update that this Game Object was spawned by the network
                     DISReceiveComponent objectDISReceiveComponent = newGameObject.GetComponent<DISReceiveComponent>();
