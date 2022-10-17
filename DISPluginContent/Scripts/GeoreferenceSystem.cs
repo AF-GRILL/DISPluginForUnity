@@ -56,24 +56,29 @@ public class GeoreferenceSystem : MonoBehaviour
     /// <summary>
     /// The Altitudinal equivalent for 0 on Unity's Y-Axis.
     /// </summary>
-    [Tooltip("The Altitudinal equivalent for 0 in Unity's coordinate system.")]
-    public double OriginAlt = 0;
+    //[Tooltip("The Altitudinal equivalent for 0 in Unity's coordinate system.")]
+    //public double OriginAlt = 0;
 
-    private Vector3Double Origin;
+    private Vector3Double OriginLLA;
     private Vector3Double OriginECEF;
     private Vector3Double temp;
+    private Vector3Double tempLLA;
     // Start is called before the first frame update
     void Awake()
     {
         SetupVars();
 
         #region Debugging
+        temp = ecef_to_flatearth(OriginECEF);
+        Debug.Log("ECEFToUnity: " + temp.X + ", " + temp.Y + ", " + temp.Z);
 
-        temp = ECEFToUnity(OriginECEF);
-        StartCoroutine(LoopCalc());
+        temp = geodetic_to_flatearth(new Vector3Double { X = 37.4720128, Y = -115.5050288, Z= 1420});
+        Debug.Log("LLAToUnity: " + temp.X + ", " + temp.Y + ", " + temp.Z);
+        //StartCoroutine(LoopCalc());
 
         #endregion Debugging
     }
+
     #region DebuggingMethods
 
     IEnumerator LoopCalc()
@@ -85,10 +90,11 @@ public class GeoreferenceSystem : MonoBehaviour
             Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
             Vector3 unityLoc = new Vector3((float)temp.X, (float)temp.Y, (float)temp.Z);
             temp = UnityToECEF(unityLoc);
-            //Debug.Log("UnityToECEF " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
+            tempLLA = Conversions.CalculateLatLonHeightFromEcefXYZ(temp);
+            //Debug.Log("UnityToECEF " + i + ": " + tempLLA.X + ", " + tempLLA.Y + ", " + tempLLA.Z);
             temp = ECEFToUnity(temp);
             i += 1;
-            yield return new WaitForSeconds(1.0f);
+            yield return new WaitForSeconds(2.5f);
         }
     }
 
@@ -104,17 +110,7 @@ public class GeoreferenceSystem : MonoBehaviour
 
     public Vector3Double ECEFToUnity(Vector3Double ECEF)
     {
-        Vector3Double LatLonAlt = Conversions.CalculateLatLonHeightFromEcefXYZ(ECEF);
-        Vector3Double Unity = geodetic_to_flatearth(LatLonAlt);
-        //TODO: Fix error in conversions.
-        //This is a TEMPORARY fix so that work on other conversions can progress.
-        //error in conversions will be fixed at a later date.
-        //This only works at specific location.
-        //Unity.X += 0;
-        //Unity.Y += -0.00274202320724726;
-        //Unity.Z += -0.00330828618577857;
-        //This is code to be removed
-        return Unity;
+        return ecef_to_flatearth(ECEF);
     }
 
     public Vector3Double UnityToLatLonAlt(Vector3 UnityCoords)
@@ -138,9 +134,7 @@ public class GeoreferenceSystem : MonoBehaviour
             Z = UnityCoords.z
         };
 
-        Vector3Double LatLonAlt = flatearth_to_geodetic(unityCoordsDouble);
-        Vector3Double ECEF = Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt);
-        return ECEF;
+        return flatearth_to_ecef(unityCoordsDouble);
     }
 
     public FNorthEastDown GetNEDVectorsAtEngineLocation(Vector3 UnityLocation)
@@ -158,7 +152,7 @@ public class GeoreferenceSystem : MonoBehaviour
         return new FEastNorthUp(northEastDownVectors.EastVector, northEastDownVectors.NorthVector, -northEastDownVectors.DownVector);
     }
 
-    public Vector3Double GetOriginLLA() { return Origin; }
+    public Vector3Double GetOriginLLA() { return OriginLLA; }
     public Vector3Double GetOriginECEF() { return OriginECEF; }
 
     #endregion PublicFunctions
@@ -167,19 +161,20 @@ public class GeoreferenceSystem : MonoBehaviour
 
     private void SetupVars()
     {
-        Origin = new Vector3Double
+        OriginLLA = new Vector3Double
         {
             X = OriginLat,
             Y = OriginLon,
-            Z = OriginAlt
+            Z = 0
         };
 
-        OriginECEF = Conversions.CalculateEcefXYZFromLatLonHeight(Origin);
+        OriginECEF = Conversions.CalculateEcefXYZFromLatLonHeight(OriginLLA);
     }
 
+
+
     /// <summary>
-    /// This method was designed by Mark Speed and modified
-    /// for Unity purposes
+    /// 
     /// </summary>
     /// <param name="latlonalt"></param>
     /// <returns></returns>
@@ -188,19 +183,19 @@ public class GeoreferenceSystem : MonoBehaviour
         //angle between d = difference calc and convert
         Vector3Double lla = new Vector3Double
         {
-            X = latlonalt.X * DEG_TO_RAD,
-            Y = latlonalt.Y * DEG_TO_RAD,
+            X = latlonalt.X * Math.PI / 180.0,
+            Y = latlonalt.Y * Math.PI / 180.0,
             Z = latlonalt.Z,
         };
 
-        double dlat = lla.X - (OriginLat * DEG_TO_RAD);
-        double dlon = lla.Y - (OriginLon * DEG_TO_RAD);
+        double dlat = lla.X - (OriginLat * Math.PI / 180.0);
+        double dlon = lla.Y - (OriginLon * Math.PI / 180.0);
 
         Vector3Double toReturn = new Vector3Double
         {
-            X = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlon * Math.Cos(lla.X), //East: possibly replace with minor axis
-            Y = lla.Z - OriginAlt, //Up
-            Z = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlat //North: possibly replace with major axis
+            X = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlon * Math.Cos(lla.X),
+            Y = lla.Z - OriginLLA.Z,
+            Z = (EARTH_GEOCENTRIC_RADIUS + lla.Z) * dlat
         };
 
         return toReturn;
@@ -209,18 +204,90 @@ public class GeoreferenceSystem : MonoBehaviour
     private Vector3Double flatearth_to_geodetic(Vector3Double UnityCoords)
     {
         double dlat = (UnityCoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y));
-        double dlon = (UnityCoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y) * Math.Cos(dlat + (OriginLat * DEG_TO_RAD))));
+        double dlon = (UnityCoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y) * Math.Cos(dlat + (OriginLat * Math.PI / 180.0))));
 
         Vector3Double toReturn = new Vector3Double
         {
-            X = ((OriginLat * DEG_TO_RAD) + dlat) * RAD_TO_DEG, //Lat: accurate to the 6th decimal place, possibly replace with minor axis
-            Y = ((OriginLon * DEG_TO_RAD) + dlon) * RAD_TO_DEG, //Lon: accurate to the 6th decimal place, possibly replace with major axis
-            Z = UnityCoords.Y + OriginAlt //Alt
+            X = ((OriginLat * Math.PI / 180.0) + dlat) * 180.0 / Math.PI,
+            Y = ((OriginLon * Math.PI / 180.0) + dlon) * 180.0 / Math.PI,
+            Z = UnityCoords.Y + OriginLLA.Z //Alt
         };
 
         return toReturn;
     }
 
+
+
+    private Vector3Double ecef_to_flatearth(Vector3Double ecefLocation)
+    {
+        double earthSemiMajorRadiusMeters = 6378137;
+        double earthSemiMinorRadiusMeters = 6356752.3142;
+
+        double earthSemiMajorRadiusMetersSquare = Math.Pow(earthSemiMajorRadiusMeters, 2);
+        double earthSemiMinorRadiusMetersSquare = Math.Pow(earthSemiMinorRadiusMeters, 2);
+        double distFromXToY = Math.Sqrt(Math.Pow(ecefLocation.X, 2) + Math.Pow(ecefLocation.Y, 2));
+
+        double longitude = Math.Atan2(ecefLocation.Y, ecefLocation.X);
+        double latitude = Math.Atan(earthSemiMajorRadiusMetersSquare / earthSemiMinorRadiusMetersSquare * (ecefLocation.Z / distFromXToY));
+        double cosLatitude = Math.Cos(latitude);
+        double sinLatitude = Math.Sin(latitude);
+        double height = (distFromXToY / cosLatitude) - (earthSemiMajorRadiusMetersSquare / Math.Sqrt((earthSemiMajorRadiusMetersSquare * Math.Pow(cosLatitude, 2)) + (earthSemiMinorRadiusMetersSquare * Math.Pow(sinLatitude, 2))));
+        
+        double dlat = latitude - glm.Radians(OriginLat);
+        double dlon = longitude - glm.Radians(OriginLon);
+
+        Vector3Double toReturn = new Vector3Double
+        {
+            X = (EARTH_GEOCENTRIC_RADIUS + height) * dlon * Math.Cos(latitude),
+            Y = height - OriginLLA.Z,
+            Z = (EARTH_GEOCENTRIC_RADIUS + height) * dlat
+        };
+
+        return toReturn;
+    }
+
+    private Vector3Double flatearth_to_ecef(Vector3Double UnityCoords)
+    {
+        double dlat = (UnityCoords.Z / (EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y));
+        double dlon = (UnityCoords.X / ((EARTH_GEOCENTRIC_RADIUS + UnityCoords.Y) * Math.Cos(dlat + glm.Radians(OriginLat))));
+
+        Vector3Double lla = new Vector3Double
+        {
+            X = (glm.Radians(OriginLat) + dlat),
+            Y = (glm.Radians(OriginLon) + dlon),
+            Z = UnityCoords.Y + OriginLLA.Z
+        };
+
+        double earthSemiMajorRadiusMeters = 6378137;
+        double earthSemiMinorRadiusMeters = 6356752.3142;
+
+        double cosLatitude = Math.Cos(lla.X);
+        double sinLatitude = Math.Sin(lla.X);
+        double cosLongitude = Math.Cos(lla.Y);
+        double sinLongitude = Math.Sin(lla.Y);
+
+        double XYBaseConversion = (earthSemiMajorRadiusMeters / (Math.Sqrt(Math.Pow(cosLatitude, 2) + ((Math.Pow(earthSemiMinorRadiusMeters, 2) / Math.Pow(earthSemiMajorRadiusMeters, 2)) * Math.Pow(sinLatitude, 2))))) + lla.Z;
+        double ZBaseConversion = (earthSemiMinorRadiusMeters / (((Math.Sqrt(Math.Pow(cosLatitude, 2) * (Math.Pow(earthSemiMajorRadiusMeters, 2) / Math.Pow(earthSemiMinorRadiusMeters, 2)) + Math.Pow(sinLatitude, 2)))))) + lla.Z;
+
+        return new Vector3Double
+        {
+            X = XYBaseConversion * cosLatitude * cosLongitude,
+            Y = XYBaseConversion * cosLatitude * sinLongitude,
+            Z = ZBaseConversion * sinLatitude
+        };
+
+    }
+
+
+
+    #endregion PrivateFunctions
+
+}
+
+#region OldCode
+
+/*
+ 
     private Vector3Double geodetic_to_squareflatearth(Vector3Double latlonalt)
     {
         Vector3Double lla = new Vector3Double
@@ -440,14 +507,6 @@ public class GeoreferenceSystem : MonoBehaviour
         return new Vector3Double { X = x, Y = y, Z = z };
     }
 
-    #endregion PrivateFunctions
-
-}
-
-#region OldCode
-
-/*
- 
     private void GetWorldFrameToECEFFrame(Vector3Double ECEF)
     {
         if (Abs(ECEF.X) < 0.000000001 && Abs(ECEF.Y) < 0.000000001)
