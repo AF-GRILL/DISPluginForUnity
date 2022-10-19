@@ -62,7 +62,7 @@ public class Conversions
     /// </summary>
     /// <param name="ecefLocation">The ECEF location</param>
     /// <return>The converted latitude in degrees, longitude in degrees, and height in meters</return>
-    public static Vector3Double CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation)
+    public static FLatLonAlt CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation)
     {
         double earthSemiMajorRadiusMeters = 6378137;
         double earthSemiMinorRadiusMeters = 6356752.3142;
@@ -78,11 +78,11 @@ public class Conversions
         double sinLatitude = Math.Sin(glm.Radians(latitude));
         double height = (distFromXToY / cosLatitude) - (earthSemiMajorRadiusMetersSquare / Math.Sqrt((earthSemiMajorRadiusMetersSquare * Math.Pow(cosLatitude, 2)) + (earthSemiMinorRadiusMetersSquare * Math.Pow(sinLatitude, 2))));
 
-        return new Vector3Double
+        return new FLatLonAlt
         {
-            X = latitude,
-            Y = longitude,
-            Z = height
+            Latitude = latitude,
+            Longitude = longitude,
+            Altitude = height
         };
     }
 
@@ -91,18 +91,18 @@ public class Conversions
     /// </summary>
     /// <param name="latLonHeightDegreesMeters">The latitude in degrees, longitude in degrees, and height in meters</param>
     /// <return>The converted ECEF location</return>
-    public static Vector3Double CalculateEcefXYZFromLatLonHeight(Vector3Double latLonHeightDegreesMeters)
+    public static Vector3Double CalculateEcefXYZFromLatLonHeight(FLatLonAlt latLonHeightDegreesMeters)
     {
         double earthSemiMajorRadiusMeters = 6378137;
         double earthSemiMinorRadiusMeters = 6356752.3142;
 
-        double cosLatitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.X));
-        double sinLatitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.X));
-        double cosLongitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.Y));
-        double sinLongitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.Y));
+        double cosLatitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.Latitude));
+        double sinLatitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.Latitude));
+        double cosLongitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.Longitude));
+        double sinLongitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.Longitude));
 
-        double XYBaseConversion = (earthSemiMajorRadiusMeters / (Math.Sqrt(Math.Pow(cosLatitude, 2) + ((Math.Pow(earthSemiMinorRadiusMeters, 2) / Math.Pow(earthSemiMajorRadiusMeters, 2)) * Math.Pow(sinLatitude, 2))))) + latLonHeightDegreesMeters.Z;
-        double ZBaseConversion = (earthSemiMinorRadiusMeters / (((Math.Sqrt(Math.Pow(cosLatitude, 2) * (Math.Pow(earthSemiMajorRadiusMeters, 2) / Math.Pow(earthSemiMinorRadiusMeters, 2)) + Math.Pow(sinLatitude, 2)))))) + latLonHeightDegreesMeters.Z;
+        double XYBaseConversion = (earthSemiMajorRadiusMeters / (Math.Sqrt(Math.Pow(cosLatitude, 2) + ((Math.Pow(earthSemiMinorRadiusMeters, 2) / Math.Pow(earthSemiMajorRadiusMeters, 2)) * Math.Pow(sinLatitude, 2))))) + latLonHeightDegreesMeters.Altitude;
+        double ZBaseConversion = (earthSemiMinorRadiusMeters / (((Math.Sqrt(Math.Pow(cosLatitude, 2) * (Math.Pow(earthSemiMajorRadiusMeters, 2) / Math.Pow(earthSemiMinorRadiusMeters, 2)) + Math.Pow(sinLatitude, 2)))))) + latLonHeightDegreesMeters.Altitude;
 
         return new Vector3Double
         {
@@ -451,7 +451,7 @@ public class Conversions
     /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
     /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
     /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-    public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
     {
         if (GeoReferencingSystem == null)
         {
@@ -475,7 +475,7 @@ public class Conversions
     /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
     /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
     /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-    public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
     {
         if (GeoReferencingSystem == null)
         {
@@ -496,7 +496,7 @@ public class Conversions
     /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
     /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
     /// <return>The Unity rotation of the given Psi, Theta, Phi rotation</return>
-    public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, float LatitudeDegrees, float LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+    public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
     {
         if (GeoReferencingSystem == null)
         {
@@ -533,20 +533,18 @@ public class Conversions
         FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(LatitudeDegrees, LongitudeDegrees);
 
         //Get NED of the world origin
-        FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(new Vector3(0, 0, 0));
-        originNorthEastDown.DownVector *= -1;
+        FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
 
         // Get the rotational difference between calculated NED and Unity origin NED
-        float XAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.EastVector, originNorthEastDown.EastVector);
-        float YAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.DownVector, originNorthEastDown.DownVector);
-        float ZAxisRotationAngle = Vector3.Dot(NorthEastDownVectors.NorthVector, originNorthEastDown.NorthVector);
+        float XAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.EastVector, originNorthEastDown.EastVector);
+        float YAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.DownVector, originNorthEastDown.DownVector);
+        float ZAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.NorthVector, originNorthEastDown.NorthVector);
 
         FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
 
         unityRotation.z = HeadingPitchRollDegrees.Roll + XAxisRotationAngle;
         unityRotation.x = HeadingPitchRollDegrees.Pitch + YAxisRotationAngle;
-        //Heading of 0 is East, but heading of 0 in Unity is North. Subtract 90 to make up for the offset
-        unityRotation.y = HeadingPitchRollDegrees.Heading + ZAxisRotationAngle - 90;
+        unityRotation.y = HeadingPitchRollDegrees.Heading + ZAxisRotationAngle;
 
         return unityRotation;
     }
@@ -560,24 +558,24 @@ public class Conversions
     /// <returns>A vector that is terms of ECEF or the same vector if the Georeference script is invalid.</returns>
     public static Vector3Double ConvertUnityVectorToECEFVector(Vector3 UnityVector, GeoreferenceSystem GeoreferencingScript, Vector3 CurrentLocation)
     {
-        Vector3Double eceVector3 = new Vector3Double();
+        Vector3Double ecefVector = new Vector3Double();
 
         if (GeoreferencingScript)
         {
-            Vector3Double lla = GeoreferencingScript.UnityToLatLonAlt(CurrentLocation);
-            FNorthEastDown northEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(lla.X, lla.Y);
+            FLatLonAlt lla = GeoreferencingScript.UnityToLatLonAlt(CurrentLocation);
+            FNorthEastDown northEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(lla.Latitude, lla.Longitude);
 
             //Convert the Unity Engine linear velocity to be in terms of ECEF
-            Vector3 dvecECEVector3 = northEastDownVectors.NorthVector * -UnityVector.y + northEastDownVectors.EastVector * UnityVector.x - northEastDownVectors.DownVector * UnityVector.z;
-            eceVector3 = new Vector3Double
+            Vector3 dvecECEFVector = northEastDownVectors.NorthVector * UnityVector.z + northEastDownVectors.EastVector * UnityVector.x - northEastDownVectors.DownVector * UnityVector.y;
+            ecefVector = new Vector3Double
             {
-                X = dvecECEVector3.x,
-                Y = dvecECEVector3.y,
-                Z = dvecECEVector3.z
+                X = dvecECEFVector.x,
+                Y = dvecECEFVector.y,
+                Z = dvecECEFVector.z
             };
         }
 
-        return eceVector3;
+        return ecefVector;
     }
 
     /// <summary>
@@ -596,9 +594,9 @@ public class Conversions
 
         FPsiThetaPhi PsiThetaPhiRadians = new FPsiThetaPhi(EntityStatePduIn.EntityOrientation);
 
-        Vector3Double lla = CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation);
+        FLatLonAlt lla = CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation);
 
-        return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.X, lla.Y, GeoReferencingSystem);
+        return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.Latitude, lla.Longitude, GeoReferencingSystem);
     }
 
     /// <summary>
@@ -645,14 +643,13 @@ public class Conversions
         FNorthEastDown OriginNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
 
         // Get the rotational difference between calculated NED and Unity origin NED
-        float XAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.EastVector, OriginNorthEastDown.EastVector)));
-        float YAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.DownVector, OriginNorthEastDown.DownVector)));
-        float ZAxisRotationAngle = glm.Degrees(Mathf.Acos(Vector3.Dot(NorthEastDownVectors.NorthVector, OriginNorthEastDown.NorthVector)));
+        float XAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.EastVector, OriginNorthEastDown.EastVector);
+        float YAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.DownVector, OriginNorthEastDown.DownVector);
+        float ZAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.NorthVector, OriginNorthEastDown.NorthVector);
 
         headingPitchRoll.Roll = UnityRotation.z - XAxisRotationAngle;
         headingPitchRoll.Pitch = UnityRotation.x - YAxisRotationAngle;
-        //Heading of 0 is East, but heading of 0 in Unity is North. Add 90 to make up for the offset
-        headingPitchRoll.Heading = UnityRotation.y - ZAxisRotationAngle + 90;
+        headingPitchRoll.Heading = UnityRotation.y - ZAxisRotationAngle;
 
         return headingPitchRoll;
     }
@@ -667,9 +664,9 @@ public class Conversions
     public static FPsiThetaPhi GetPsiThetaPhiDegreesFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
     {
         FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
-        Vector3Double lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
+        FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
 
-        return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+        return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
     }
 
     /// <summary>
@@ -682,9 +679,9 @@ public class Conversions
     public static FPsiThetaPhi GetPsiThetaPhiRadiansFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
     {
         FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
-        Vector3Double lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
+        FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation);
 
-        return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+        return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
     }
 
     /// <summary>

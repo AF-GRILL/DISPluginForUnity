@@ -48,7 +48,8 @@ public static class PDUUtil
     {
         byte[] markingCharacters = entityStatePdu.Marking.Characters;
         string markingString = System.Text.Encoding.Default.GetString(markingCharacters);
-        markingString = markingString.Substring(0, 11);
+        int length = (markingString.Length < 12) ? markingString.Length : 11;
+        markingString = markingString.Substring(0, length);
         return markingString;
     }
     public static Marking getStringAsMarking(string stringToConvert)

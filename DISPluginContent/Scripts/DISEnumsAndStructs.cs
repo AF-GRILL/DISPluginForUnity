@@ -146,3 +146,29 @@ public struct FPsiThetaPhi
         this.Phi = InOrientation.Phi;
     }
 };
+
+[System.Serializable]
+public struct FLatLonAlt
+{
+    public double Latitude;
+    public double Longitude;
+    public double Altitude;
+
+    public FLatLonAlt(double Lat, double Lon, double Alt)
+    {
+        Latitude = Lat;
+        Longitude = Lon;
+        Altitude = Alt;
+    }
+
+    /// <summary>
+    /// Form a new FLatLonAlt variable from a given Vector3Double.
+    /// </summary>
+    /// <param name="lla">Represents Latitude (X), Longitude (Y), and Altitude (Z) to convert to an FLatLonAlt struct.</param>
+    public FLatLonAlt(Vector3Double lla)
+    {
+        Latitude = lla.X;
+        Longitude = lla.Y;
+        Altitude = lla.Z;
+    }
+};

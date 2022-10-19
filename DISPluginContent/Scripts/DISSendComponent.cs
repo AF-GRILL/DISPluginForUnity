@@ -292,9 +292,9 @@ public class DISSendComponent : MonoBehaviour
             newEntityStatePDU.EntityLocation = georeferenceScript.UnityToECEF(transform.position);
 
             //Calculate the orientation of the entity in Psi, Theta, Phi
-            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
             FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
-            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
 
             newEntityStatePDU.EntityOrientation = new Orientation
             {
@@ -405,9 +405,9 @@ public class DISSendComponent : MonoBehaviour
         if (georeferenceScript)
         {
             //Calculate the orientation of the entity in Psi, Theta, Phi
-            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
             FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
-            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
             // Get the entity's current orientation quaternion
             actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
         }
@@ -446,9 +446,9 @@ public class DISSendComponent : MonoBehaviour
         if (georeferenceScript)
         {
             //Calculate the orientation of the entity in Psi, Theta, Phi
-            Vector3Double lla = georeferenceScript.UnityToLatLonAlt(transform.position);
+            FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
             FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
-            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.X, lla.Y);
+            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
             // Get the entity's current orientation matrix
 
             Orientation entityOrientation = new Orientation
