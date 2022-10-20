@@ -735,4 +735,66 @@ public class Conversions
         return new FNorthEastDown(EastNorthUpVectors.NorthVector, EastNorthUpVectors.EastVector, -EastNorthUpVectors.UpVector);
     }
 
+    //https://hal.archives-ouvertes.fr/hal-01704943v2/document
+    public static Vector3Double testECEFToLLA_Zhu(Vector3Double ECEF)
+    {
+        double a = 6378137;
+        double b = 6356752.3142;
+        double w = Math.Sqrt(Math.Pow(ECEF.X, 2) + Math.Pow(ECEF.Y, 2));
+        double l = Math.Pow(Math.E, 2) / 2;
+        double m = Math.Pow(w/a, 2);
+        double n = Math.Pow((1 - Math.Pow(Math.E, 2) * ECEF.Z / b), 2);
+        double i = -(2 * Math.Pow(l, 2) + m + n) / 2;
+        double k = Math.Pow(l, 2) * (Math.Pow(l, 2) - m - n);
+        double q = Math.Pow((m + n - 4 * Math.Pow(l, 2)), 3) / 216 + m * n * Math.Pow(l, 2);
+        double D = Math.Sqrt((2 * q - m * n * Math.Pow(l, 2)) * m * n * Math.Pow(l, 2));
+        double B = i / 3 - Math.Pow(q + D, 1 / 3) - Math.Pow(q - D, 1 / 3);
+        double t = Math.Sqrt(Math.Sqrt(Math.Pow(B, 2) - k) - (B + i) / 2) - Math.Sign(m - n) * Math.Sqrt((B - i) / 2);
+        double ww = w / (t + 1);
+        double z = (1 - Math.Pow(Math.E, 2)) * ECEF.Z / (t - 1);
+        double lat = Math.Atan(z / ((1 - Math.Pow(Math.E, 2)) * ww));
+        double lon = 2 * Math.Atan((w - ECEF.X) / ECEF.Y);
+        double h = Math.Sign(t - 1 + l) * Math.Sqrt(Math.Pow(w - ww, 2) + Math.Pow(ECEF.Z - z, 2));
+
+
+        return new Vector3Double { X = lat, Y = lon, Z = h };
+    }
+
+    //https://hal.archives-ouvertes.fr/hal-01704943v2/document
+    public static Vector3Double testECEFToLLA(Vector3Double ECEF)
+    {
+        double a = 6378137;
+        double b = 6356752.3142;
+        double Hmin = Math.Pow(Math.E, 12) / 4;
+        double w2 = Math.Pow(ECEF.X, 2) + Math.Pow(ECEF.Y, 2);
+        double l = Math.Pow(Math.E, 2) / 2;
+        double m = w2 / Math.Pow(a, 2);
+        double n = Math.Pow(ECEF.Z, 2) * (1 - Math.Pow(Math.E, 2)) / Math.Pow(a, 2);
+        double p = (m + n - 4 * Math.Pow(l, 2)) / 6;
+        double G = m * n * Math.Pow(l, 2);
+        double H = 2 * Math.Pow(p, 3) + G;
+        if (H < Hmin) { return null; }
+        double C = Math.Pow(H + G + 2 * Math.Pow(H * G, 1 / 2), 1/3) / Math.Pow(2, 1 / 3);
+        double i = -(2 * Math.Pow(l, 2) + m + n) / 2;
+        double P = Math.Pow(p, 2);
+        double B = i / 3 - C - P / C;
+        double k = Math.Pow(l, 2) * (Math.Pow(l, 2) - m - n);
+        double t = Math.Sqrt(Math.Sqrt(Math.Pow(B, 2) - k) - (B + i) / 2) - Math.Sign(m - n) * Math.Sqrt(Math.Abs(B - i) / 2);
+        double F = Math.Pow(t, 4) + 2 * i * Math.Pow(t, 2) + 2 * l * (m - n) * t + k;
+        double dFdt = 4 * Math.Pow(t, 3) + 4 * i * t + 2 * l * (m - n);
+        double delta_t = -F / dFdt;
+        double u = t + delta_t + l;
+        double v = t + delta_t - l;
+        double w = Math.Sqrt(w2);
+        double lat = Math.Atan2((ECEF.Z * u), w2 * v);
+        double delta_w = w * (1 - 1 / u);
+        double delta_z = ECEF.Z * (1 - (1 - Math.Pow(Math.E, 2)) / v);
+        double h = Math.Sign(u-1)*Math.Sqrt(Math.Pow(delta_w,2) + Math.Pow(delta_z,2));
+        double lon = Math.Atan2(ECEF.Y, ECEF.X);
+
+        return new Vector3Double { X = lat, Y = lon, Z = h };
+    }
+
+    
+
 }
