@@ -428,9 +428,9 @@ public class DISReceiveComponent : MonoBehaviour
         //Verify that ground clamping is enabled, the entity is owned by another sim, is of the ground domain, and that it is not a munition
         if (SpawnedFromNetwork && (PerformGroundClamping == EGroundClampingMode.AlwaysGroundClamp || (PerformGroundClamping == EGroundClampingMode.GroundClampWithDISOptions && CurrentEntityType.domain == 1 && CurrentEntityType.entityKind != 2)))
         {
-            Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(MostRecentDeadReckoningPDU.EntityLocation);
+            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(MostRecentDeadReckoningPDU.EntityLocation);
 
-            FNorthEastDown northEastDownVectors = Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.X, llh.Y);
+            FNorthEastDown northEastDownVectors = Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.Latitude, llh.Longitude);
 
             Vector3 clampDirection = northEastDownVectors.DownVector;
 

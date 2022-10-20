@@ -25,9 +25,9 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                        FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
                             Psi = psiThetaPhiRadians.Psi,
@@ -57,9 +57,9 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                        FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
                             Psi = psiThetaPhiRadians.Psi,
@@ -159,9 +159,9 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                        FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
                             Psi = psiThetaPhiRadians.Psi,
@@ -193,9 +193,9 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                        FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
                             Psi = psiThetaPhiRadians.Psi,
@@ -292,9 +292,9 @@ public class DeadReckoningLibrary
                     if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                     {
                         //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                        Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                        FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
 
-                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.X, llh.Y);
+                        FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
                         DeadReckonedPdu.EntityOrientation = new Orientation
                         {
                             Psi = psiThetaPhiRadians.Psi,
@@ -651,8 +651,8 @@ public class DeadReckoningLibrary
             otherParameters[1] = 0;
             otherParameters[2] = 0;
 
-            Vector3Double llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation);
-            FHeadingPitchRoll headingPitchRollRadians = Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(new FPsiThetaPhi(EntityPsiThetaPhiRadians), llh.X, llh.Y);
+            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation);
+            FHeadingPitchRoll headingPitchRollRadians = Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(new FPsiThetaPhi(EntityPsiThetaPhiRadians), llh.Latitude, llh.Longitude);
 
             //Convert the floats to unsigned char arrays
             charHeading = BitConverter.GetBytes((float)headingPitchRollRadians.Heading);
