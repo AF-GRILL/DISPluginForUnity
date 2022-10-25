@@ -731,7 +731,7 @@ public class Conversions
     {
         return new FNorthEastDown(EastNorthUpVectors.NorthVector, EastNorthUpVectors.EastVector, -EastNorthUpVectors.UpVector);
     }
-
+    /*
     //https://hal.archives-ouvertes.fr/hal-01704943v2/document
     public static Vector3Double testECEFToLLA_Zhu(Vector3Double ECEF)
     {
@@ -791,7 +791,7 @@ public class Conversions
 
         return new Vector3Double { X = lat, Y = lon, Z = h };
     }
-
+    */
     
 
 }
