@@ -43,7 +43,7 @@ public class DISGameManager : MonoBehaviour
     public GameObject DISEntityParentContainer;
 
     [Header("")]
-    public UnityEvent<GameObject> e_CreateDISEntity;
+    public UnityEvent<GameObject, EntityStatePdu> e_CreateDISEntity;
     public UnityEvent<GameObject> e_DestroyDISEntity;
     public UnityEvent<EntityStatePdu> e_NoDISEntity;
 
@@ -140,12 +140,12 @@ public class DISGameManager : MonoBehaviour
                     if (DISEntityParentContainer)
                     {
                         newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation, DISEntityParentContainer.transform);
-                        e_CreateDISEntity.Invoke(newGameObject);
+                        e_CreateDISEntity.Invoke(newGameObject, entityStatePdu);
                     }
                     else
                     {
                         newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation);
-                        e_CreateDISEntity.Invoke(newGameObject);
+                        e_CreateDISEntity.Invoke(newGameObject, entityStatePdu);
                     }
 
                     //Update that this Game Object was spawned by the network
