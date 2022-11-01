@@ -94,6 +94,15 @@ public class PDUReceiver : MonoBehaviour
         receiver.beginReceiving();
     }
 
+    public void stopUDPReceiver()
+    {
+        if (receiver != null)
+        {
+            receiver.stopReceiving();
+            receiver = null;
+        }
+    }
+
     private void ProcessDISPacket(Pdu PDUPacketToProcess)
     {
         if (PDUPacketToProcess.ExerciseID == disManagerScript.ExerciseID)

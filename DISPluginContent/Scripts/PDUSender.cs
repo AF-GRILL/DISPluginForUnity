@@ -135,11 +135,11 @@ public class PDUSender : MonoBehaviour
     //Stops the thread and disconnects
     public void Stop()
     {
-
         if (thread != null)
         {
             sending = false;
             thread.Join();
+            thread = null;
         }
         else
         {
@@ -155,6 +155,11 @@ public class PDUSender : MonoBehaviour
         ipAddressString = IP;
         this.port = port;
         Init();
+    }
+
+    public bool IsConnected()
+    {
+        return thread != null;
     }
 
     #region Send PDU Methods

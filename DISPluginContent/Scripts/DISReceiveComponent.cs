@@ -464,6 +464,7 @@ public class DISReceiveComponent : MonoBehaviour
     {
         if (disGameManagerScript)
         {
+            disGameManagerScript.e_DestroyDISEntity.Invoke(this.gameObject);
             disGameManagerScript.RemoveDISEntityFromMap(CurrentEntityID.toEntityID());
         }
         else

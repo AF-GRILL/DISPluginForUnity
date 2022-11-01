@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class DISGameManager : MonoBehaviour
 {
@@ -41,9 +42,15 @@ public class DISGameManager : MonoBehaviour
     [Tooltip("The parent container that spawned DIS entities should be placed in.")]
     public GameObject DISEntityParentContainer;
 
+    [Header("")]
+    public UnityEvent<GameObject> e_CreateDISEntity;
+    public UnityEvent<GameObject> e_DestroyDISEntity;
+    public UnityEvent<EntityStatePdu> e_NoDISEntity;
+
     private Dictionary<UInt64, GameObject> entityIDDictionary;
     private Dictionary<UInt64, GameObject> entityTypeDictionary;
     private GeoreferenceSystem georeferenceScript;
+    //Add event for handling no mapping for entity
 
     public DISGameManager()
     {
@@ -54,7 +61,7 @@ public class DISGameManager : MonoBehaviour
     private void Awake()
     {
         InitializeEntityTypeMappings();
-
+        
         georeferenceScript = GetComponent<GeoreferenceSystem>();
     }
 
@@ -133,10 +140,12 @@ public class DISGameManager : MonoBehaviour
                     if (DISEntityParentContainer)
                     {
                         newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation, DISEntityParentContainer.transform);
+                        e_CreateDISEntity.Invoke(newGameObject);
                     }
                     else
                     {
                         newGameObject = Instantiate(entityGameObject, spawnPosition, spawnRotation);
+                        e_CreateDISEntity.Invoke(newGameObject);
                     }
 
                     //Update that this Game Object was spawned by the network
@@ -226,4 +235,5 @@ public class DISGameManager : MonoBehaviour
         UInt64 entityIDU64 = PDUUtil.EntityIDToUInt64(EntityIDToRemove);
         return entityIDDictionary.Remove(entityIDU64);
     }
+
 }

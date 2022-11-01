@@ -54,16 +54,6 @@ public class GeoreferenceSystem : MonoBehaviour
     void Awake()
     {
         SetupVars();
-
-        #region Debugging
-        temp = ecef_to_flatearth(OriginECEF);
-        Debug.Log("ECEFToUnity: " + temp.X + ", " + temp.Y + ", " + temp.Z);
-
-        temp = geodetic_to_flatearth(OriginLLA);
-        Debug.Log("LLAToUnity: " + temp.X + ", " + temp.Y + ", " + temp.Z);
-        //StartCoroutine(LoopCalc());
-
-        #endregion Debugging
     }
 
     #region DebuggingMethods
