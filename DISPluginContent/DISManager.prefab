@@ -47,11 +47,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ExerciseID: 13
-  SiteID: 0
-  ApplicationID: 0
+  SiteID: 14
+  ApplicationID: 88
   entityTypes:
-  - friendlyName: Tester
+  - friendlyName: MiG
     entityTypes:
+    - entityKind: 1
+      domain: 2
+      country: 225
+      category: 1
+      subcategory: 3
+      specific: 3
+      extra: 1
     - entityKind: 1
       domain: 2
       country: 225
@@ -59,8 +66,24 @@ MonoBehaviour:
       subcategory: 3
       specific: 0
       extra: 0
-    gameObject: {fileID: 0}
+    - entityKind: 1
+      domain: 2
+      country: 222
+      category: 1
+      subcategory: 2
+      specific: 0
+      extra: 0
+    gameObject: {fileID: 1956214152485627141, guid: cc025ea5ac43a9d49a49752365932ede, type: 3}
   DISEntityParentContainer: {fileID: 0}
+  e_CreateDISEntity:
+    m_PersistentCalls:
+      m_Calls: []
+  e_DestroyDISEntity:
+    m_PersistentCalls:
+      m_Calls: []
+  e_NoDISEntity:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &3740386622288005759
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,11 +97,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ipAddressString: 0.0.0.0
-  port: 5014
-  autoConnectAtStart: 1
+  port: 3000
+  autoConnectAtStart: 0
   useMulticast: 0
   allowLoopback: 1
-  multicastAddress: 224.252.0.1
+  multicastAddress: 0.0.0.0
 --- !u!114 &3424637735621093189
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -92,10 +115,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxQueueSize: 1024
-  connectionType: 1
+  connectionType: 0
   ipAddressString: 10.0.1.123
   port: 5014
-  autoConnectAtStart: 1
+  autoConnectAtStart: 0
 --- !u!114 &6292510029869354289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -108,6 +131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f882ccb308c688c46ae13fe9533588e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OriginLat: 37.4720128
-  OriginLon: -115.5050288
-  OriginAlt: 1410
+  OriginLLA:
+    Latitude: 0
+    Longitude: 0
+    Altitude: 0
