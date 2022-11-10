@@ -66,18 +66,18 @@ public class Conversions
     {
         FLatLonAlt latLonAltLocation = new FLatLonAlt();
 
-        double a = 6378137;
-        double b = 6356752.3142;
+        double earthEquitorialRadiusMeters = 6378137;
+        double earthPolarRadiusMeters = 6356752.3142;
 
-        double aSquared = Math.Pow(a, 2);
-        double bSquared = Math.Pow(b, 2);
+        double earthEquitorialRadiusMetersSquared = Math.Pow(earthEquitorialRadiusMeters, 2);
+        double earthPolarRadiusMetersSquared = Math.Pow(earthPolarRadiusMeters, 2);
 
-        double eSquared = (aSquared - bSquared) / aSquared;
-        double ePrimeSquared = (aSquared - bSquared) / bSquared;
+        double eSquared = (earthEquitorialRadiusMetersSquared - earthPolarRadiusMetersSquared) / earthEquitorialRadiusMetersSquared;
+        double ePrimeSquared = (earthEquitorialRadiusMetersSquared - earthPolarRadiusMetersSquared) / earthPolarRadiusMetersSquared;
 
         double p = Math.Sqrt(Math.Pow(ecefLocation.X, 2) + Math.Pow(ecefLocation.Y, 2));
-        double F = 54 * bSquared * Math.Pow(ecefLocation.Z, 2);
-        double G = Math.Pow(p, 2) + (1 - eSquared) * Math.Pow(ecefLocation.Z, 2) - eSquared * (aSquared - bSquared);
+        double F = 54 * earthPolarRadiusMetersSquared * Math.Pow(ecefLocation.Z, 2);
+        double G = Math.Pow(p, 2) + (1 - eSquared) * Math.Pow(ecefLocation.Z, 2) - eSquared * (earthEquitorialRadiusMetersSquared - earthPolarRadiusMetersSquared);
         double c = (Math.Pow(eSquared, 2) * F * Math.Pow(p, 2)) / Math.Pow(G, 3);
 
         double s = Math.Pow(1 + c + Math.Sqrt(Math.Pow(c, 2) + 2 * c), 1f / 3f);
@@ -85,12 +85,12 @@ public class Conversions
         double P = F / (3 * Math.Pow(k, 2) * Math.Pow(G, 2));
         double Q = Math.Sqrt(1 + 2 * Math.Pow(eSquared, 2) * P);
 
-        double rNot = (-P * eSquared * p) / (1 + Q) + Math.Sqrt(1f / 2f * aSquared * (1 + 1 / Q) - (P * (1 - eSquared) * Math.Pow(ecefLocation.Z, 2)) / (Q * (1 + Q)) - 1f / 2f * P * Math.Pow(p, 2));
+        double rNot = (-P * eSquared * p) / (1 + Q) + Math.Sqrt(1f / 2f * earthEquitorialRadiusMetersSquared * (1 + 1 / Q) - (P * (1 - eSquared) * Math.Pow(ecefLocation.Z, 2)) / (Q * (1 + Q)) - 1f / 2f * P * Math.Pow(p, 2));
         double U = Math.Sqrt(Math.Pow(p - eSquared * rNot, 2) + Math.Pow(ecefLocation.Z, 2));
         double V = Math.Sqrt(Math.Pow(p - eSquared * rNot, 2) + (1 - eSquared) * Math.Pow(ecefLocation.Z, 2));
-        double zNot = (bSquared * ecefLocation.Z) / (a * V);
+        double zNot = (earthPolarRadiusMetersSquared * ecefLocation.Z) / (earthEquitorialRadiusMeters * V);
 
-        latLonAltLocation.Altitude = U * (1 - bSquared / (a * V));
+        latLonAltLocation.Altitude = U * (1 - earthPolarRadiusMetersSquared / (earthEquitorialRadiusMeters * V));
         latLonAltLocation.Latitude = glm.Degrees(Math.Atan((ecefLocation.Z + ePrimeSquared * zNot) / p));
         latLonAltLocation.Longitude = glm.Degrees(Math.Atan2(ecefLocation.Y, ecefLocation.X));
 
@@ -106,16 +106,16 @@ public class Conversions
     {
         Vector3Double ecefLocation = new Vector3Double();
 
-        double a = 6378137;
-        double b = 6356752.3142;
+        double earthEquitorialRadiusMeters = 6378137;
+        double earthPolarRadiusMeters = 6356752.3142;
 
-        double aSquared = Math.Pow(a, 2);
-        double bSquared = Math.Pow(b, 2);
+        double earthEquitorialRadiusMetersSquared = Math.Pow(earthEquitorialRadiusMeters, 2);
+        double earthPolarRadiusMetersSquared = Math.Pow(earthPolarRadiusMeters, 2);
 
-        double eSquared = 1 - bSquared / aSquared;
-        double f = 1 - b / a;
+        double eSquared = 1 - earthPolarRadiusMetersSquared / earthEquitorialRadiusMetersSquared;
+        double f = 1 - earthPolarRadiusMeters / earthEquitorialRadiusMeters;
 
-        double nLat = a / Math.Sqrt(1 - eSquared * Math.Pow(Math.Sin(glm.Radians(latLonHeightDegreesMeters.Latitude)), 2));
+        double nLat = earthEquitorialRadiusMeters / Math.Sqrt(1 - eSquared * Math.Pow(Math.Sin(glm.Radians(latLonHeightDegreesMeters.Latitude)), 2));
 
         double latRadians = glm.Radians(latLonHeightDegreesMeters.Latitude);
         double lonRadians = glm.Radians(latLonHeightDegreesMeters.Longitude);
