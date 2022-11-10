@@ -64,26 +64,37 @@ public class Conversions
     /// <return>The converted latitude in degrees, longitude in degrees, and height in meters</return>
     public static FLatLonAlt CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation)
     {
-        double earthSemiMajorRadiusMeters = 6378137;
-        double earthSemiMinorRadiusMeters = 6356752.3142;
+        FLatLonAlt latLonAltLocation = new FLatLonAlt();
 
-        double earthSemiMajorRadiusMetersSquare = Math.Pow(earthSemiMajorRadiusMeters, 2);
-        double earthSemiMinorRadiusMetersSquare = Math.Pow(earthSemiMinorRadiusMeters, 2);
-        double distFromXToY = Math.Sqrt(Math.Pow(ecefLocation.X, 2) + Math.Pow(ecefLocation.Y, 2));
+        double a = 6378137;
+        double b = 6356752.3142;
 
-        double longitude = glm.Degrees(Math.Atan2(ecefLocation.Y, ecefLocation.X));
-        double latitude = glm.Degrees(Math.Atan(earthSemiMajorRadiusMetersSquare / earthSemiMinorRadiusMetersSquare * (ecefLocation.Z / distFromXToY)));
+        double aSquared = Math.Pow(a, 2);
+        double bSquared = Math.Pow(b, 2);
 
-        double cosLatitude = Math.Cos(glm.Radians(latitude));
-        double sinLatitude = Math.Sin(glm.Radians(latitude));
-        double height = (distFromXToY / cosLatitude) - (earthSemiMajorRadiusMetersSquare / Math.Sqrt((earthSemiMajorRadiusMetersSquare * Math.Pow(cosLatitude, 2)) + (earthSemiMinorRadiusMetersSquare * Math.Pow(sinLatitude, 2))));
+        double eSquared = (aSquared - bSquared) / aSquared;
+        double ePrimeSquared = (aSquared - bSquared) / bSquared;
 
-        return new FLatLonAlt
-        {
-            Latitude = latitude,
-            Longitude = longitude,
-            Altitude = height
-        };
+        double p = Math.Sqrt(Math.Pow(ecefLocation.X, 2) + Math.Pow(ecefLocation.Y, 2));
+        double F = 54 * bSquared * Math.Pow(ecefLocation.Z, 2);
+        double G = Math.Pow(p, 2) + (1 - eSquared) * Math.Pow(ecefLocation.Z, 2) - eSquared * (aSquared - bSquared);
+        double c = (Math.Pow(eSquared, 2) * F * Math.Pow(p, 2)) / Math.Pow(G, 3);
+
+        double s = Math.Pow(1 + c + Math.Sqrt(Math.Pow(c, 2) + 2 * c), 1f / 3f);
+        double k = s + 1 + 1 / s;
+        double P = F / (3 * Math.Pow(k, 2) * Math.Pow(G, 2));
+        double Q = Math.Sqrt(1 + 2 * Math.Pow(eSquared, 2) * P);
+
+        double rNot = (-P * eSquared * p) / (1 + Q) + Math.Sqrt(1f / 2f * aSquared * (1 + 1 / Q) - (P * (1 - eSquared) * Math.Pow(ecefLocation.Z, 2)) / (Q * (1 + Q)) - 1f / 2f * P * Math.Pow(p, 2));
+        double U = Math.Sqrt(Math.Pow(p - eSquared * rNot, 2) + Math.Pow(ecefLocation.Z, 2));
+        double V = Math.Sqrt(Math.Pow(p - eSquared * rNot, 2) + (1 - eSquared) * Math.Pow(ecefLocation.Z, 2));
+        double zNot = (bSquared * ecefLocation.Z) / (a * V);
+
+        latLonAltLocation.Altitude = U * (1 - bSquared / (a * V));
+        latLonAltLocation.Latitude = glm.Degrees(Math.Atan((ecefLocation.Z + ePrimeSquared * zNot) / p));
+        latLonAltLocation.Longitude = glm.Degrees(Math.Atan2(ecefLocation.Y, ecefLocation.X));
+
+        return latLonAltLocation;
     }
 
     /// <summary>
@@ -93,23 +104,27 @@ public class Conversions
     /// <return>The converted ECEF location</return>
     public static Vector3Double CalculateEcefXYZFromLatLonHeight(FLatLonAlt latLonHeightDegreesMeters)
     {
-        double earthSemiMajorRadiusMeters = 6378137;
-        double earthSemiMinorRadiusMeters = 6356752.3142;
+        Vector3Double ecefLocation = new Vector3Double();
 
-        double cosLatitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.Latitude));
-        double sinLatitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.Latitude));
-        double cosLongitude = Math.Cos(glm.Radians(latLonHeightDegreesMeters.Longitude));
-        double sinLongitude = Math.Sin(glm.Radians(latLonHeightDegreesMeters.Longitude));
+        double a = 6378137;
+        double b = 6356752.3142;
 
-        double XYBaseConversion = (earthSemiMajorRadiusMeters / (Math.Sqrt(Math.Pow(cosLatitude, 2) + ((Math.Pow(earthSemiMinorRadiusMeters, 2) / Math.Pow(earthSemiMajorRadiusMeters, 2)) * Math.Pow(sinLatitude, 2))))) + latLonHeightDegreesMeters.Altitude;
-        double ZBaseConversion = (earthSemiMinorRadiusMeters / (((Math.Sqrt(Math.Pow(cosLatitude, 2) * (Math.Pow(earthSemiMajorRadiusMeters, 2) / Math.Pow(earthSemiMinorRadiusMeters, 2)) + Math.Pow(sinLatitude, 2)))))) + latLonHeightDegreesMeters.Altitude;
+        double aSquared = Math.Pow(a, 2);
+        double bSquared = Math.Pow(b, 2);
 
-        return new Vector3Double
-        {
-            X = XYBaseConversion * cosLatitude * cosLongitude,
-            Y = XYBaseConversion * cosLatitude * sinLongitude,
-            Z = ZBaseConversion * sinLatitude
-        };
+        double eSquared = 1 - bSquared / aSquared;
+        double f = 1 - b / a;
+
+        double nLat = a / Math.Sqrt(1 - eSquared * Math.Pow(Math.Sin(glm.Radians(latLonHeightDegreesMeters.Latitude)), 2));
+
+        double latRadians = glm.Radians(latLonHeightDegreesMeters.Latitude);
+        double lonRadians = glm.Radians(latLonHeightDegreesMeters.Longitude);
+
+        ecefLocation.X = (nLat + latLonHeightDegreesMeters.Altitude) * Math.Cos(latRadians) * Math.Cos(lonRadians);
+        ecefLocation.Y = (nLat + latLonHeightDegreesMeters.Altitude) * Math.Cos(latRadians) * Math.Sin(lonRadians);
+        ecefLocation.Z = (Math.Pow(1 - f, 2) * nLat + latLonHeightDegreesMeters.Altitude) * Math.Sin(latRadians);
+
+        return ecefLocation;
     }
 
     /// <summary>
@@ -731,67 +746,4 @@ public class Conversions
     {
         return new FNorthEastDown(EastNorthUpVectors.NorthVector, EastNorthUpVectors.EastVector, -EastNorthUpVectors.UpVector);
     }
-    /*
-    //https://hal.archives-ouvertes.fr/hal-01704943v2/document
-    public static Vector3Double testECEFToLLA_Zhu(Vector3Double ECEF)
-    {
-        double a = 6378137;
-        double b = 6356752.3142;
-        double w = Math.Sqrt(Math.Pow(ECEF.X, 2) + Math.Pow(ECEF.Y, 2));
-        double l = Math.Pow(Math.E, 2) / 2;
-        double m = Math.Pow(w/a, 2);
-        double n = Math.Pow((1 - Math.Pow(Math.E, 2) * ECEF.Z / b), 2);
-        double i = -(2 * Math.Pow(l, 2) + m + n) / 2;
-        double k = Math.Pow(l, 2) * (Math.Pow(l, 2) - m - n);
-        double q = Math.Pow((m + n - 4 * Math.Pow(l, 2)), 3) / 216 + m * n * Math.Pow(l, 2);
-        double D = Math.Sqrt((2 * q - m * n * Math.Pow(l, 2)) * m * n * Math.Pow(l, 2));
-        double B = i / 3 - Math.Pow(q + D, 1 / 3) - Math.Pow(q - D, 1 / 3);
-        double t = Math.Sqrt(Math.Sqrt(Math.Pow(B, 2) - k) - (B + i) / 2) - Math.Sign(m - n) * Math.Sqrt((B - i) / 2);
-        double ww = w / (t + 1);
-        double z = (1 - Math.Pow(Math.E, 2)) * ECEF.Z / (t - 1);
-        double lat = Math.Atan(z / ((1 - Math.Pow(Math.E, 2)) * ww));
-        double lon = 2 * Math.Atan((w - ECEF.X) / ECEF.Y);
-        double h = Math.Sign(t - 1 + l) * Math.Sqrt(Math.Pow(w - ww, 2) + Math.Pow(ECEF.Z - z, 2));
-
-
-        return new Vector3Double { X = lat, Y = lon, Z = h };
-    }
-
-    //https://hal.archives-ouvertes.fr/hal-01704943v2/document
-    public static Vector3Double testECEFToLLA(Vector3Double ECEF)
-    {
-        double a = 6378137;
-        double b = 6356752.3142;
-        double Hmin = Math.Pow(Math.E, 12) / 4;
-        double w2 = Math.Pow(ECEF.X, 2) + Math.Pow(ECEF.Y, 2);
-        double l = Math.Pow(Math.E, 2) / 2;
-        double m = w2 / Math.Pow(a, 2);
-        double n = Math.Pow(ECEF.Z, 2) * (1 - Math.Pow(Math.E, 2)) / Math.Pow(a, 2);
-        double p = (m + n - 4 * Math.Pow(l, 2)) / 6;
-        double G = m * n * Math.Pow(l, 2);
-        double H = 2 * Math.Pow(p, 3) + G;
-        if (H < Hmin) { return null; }
-        double C = Math.Pow(H + G + 2 * Math.Pow(H * G, 1 / 2), 1/3) / Math.Pow(2, 1 / 3);
-        double i = -(2 * Math.Pow(l, 2) + m + n) / 2;
-        double P = Math.Pow(p, 2);
-        double B = i / 3 - C - P / C;
-        double k = Math.Pow(l, 2) * (Math.Pow(l, 2) - m - n);
-        double t = Math.Sqrt(Math.Sqrt(Math.Pow(B, 2) - k) - (B + i) / 2) - Math.Sign(m - n) * Math.Sqrt(Math.Abs(B - i) / 2);
-        double F = Math.Pow(t, 4) + 2 * i * Math.Pow(t, 2) + 2 * l * (m - n) * t + k;
-        double dFdt = 4 * Math.Pow(t, 3) + 4 * i * t + 2 * l * (m - n);
-        double delta_t = -F / dFdt;
-        double u = t + delta_t + l;
-        double v = t + delta_t - l;
-        double w = Math.Sqrt(w2);
-        double lat = Math.Atan2((ECEF.Z * u), w2 * v);
-        double delta_w = w * (1 - 1 / u);
-        double delta_z = ECEF.Z * (1 - (1 - Math.Pow(Math.E, 2)) / v);
-        double h = Math.Sign(u-1)*Math.Sqrt(Math.Pow(delta_w,2) + Math.Pow(delta_z,2));
-        double lon = Math.Atan2(ECEF.Y, ECEF.X);
-
-        return new Vector3Double { X = lat, Y = lon, Z = h };
-    }
-    */
-    
-
 }

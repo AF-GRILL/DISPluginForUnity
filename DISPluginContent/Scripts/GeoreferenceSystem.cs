@@ -191,7 +191,6 @@ public class GeoreferenceSystem : MonoBehaviour
     private void SetupVars()
     {
         OriginECEF = Conversions.CalculateEcefXYZFromLatLonHeight(OriginLLA);
-        FLatLonAlt temp = Conversions.CalculateLatLonHeightFromEcefXYZ(OriginECEF);
     }
 
 
