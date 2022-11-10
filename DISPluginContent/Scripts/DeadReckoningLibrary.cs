@@ -8,6 +8,7 @@ using UnityEngine;
 public class DeadReckoningLibrary
 {
     private static readonly double MIN_ROTATION_RATE = 0.2 * Math.PI / 180;  // minimum significant rate = 1deg/5sec
+    private static readonly double ALLOWABLE_FLOATING_POINT_ERROR = 1e-7;    // the minimum offset a floating point number can have to be approximately equal
 
     public static bool DeadReckoning(EntityStatePdu EntityPduToDeadReckon, float DeltaTime, ref EntityStatePdu DeadReckonedPdu)
     {
@@ -441,6 +442,33 @@ public class DeadReckoningLibrary
         if (Math.Abs(orientationOut.Theta) != (Mathf.PI / 2))
         {
             CosTheta = glm.Cos(orientationOut.Theta);
+        }
+
+        // Calculate values that will be used in ACos function and correct any floating point errors
+        double psiValueToACos = OrientationMatrix.m00 / CosTheta;
+        if (Math.Abs(psiValueToACos) > 1)
+        {
+            if (Math.Abs(psiValueToACos) - ALLOWABLE_FLOATING_POINT_ERROR <= 1)
+            {
+                psiValueToACos = 1 * Math.Sign(psiValueToACos);
+            }
+            else
+            {
+                Debug.LogWarning("Calculated Dead Reckoning Orientation has invalid Psi Value");
+            }
+        }
+
+        double phiValueToACos = OrientationMatrix.m22 / CosTheta;
+        if (Math.Abs(phiValueToACos) > 1)
+        {
+            if (Math.Abs(phiValueToACos) - ALLOWABLE_FLOATING_POINT_ERROR <= 1)
+            {
+                phiValueToACos = 1 * Math.Sign(phiValueToACos);
+            }
+            else
+            {
+                Debug.LogWarning("Calculated Dead Reckoning Orientation has invalid Phi Value");
+            }
         }
 
         orientationOut.Psi = (float)((Math.Acos(OrientationMatrix.m00 / CosTheta) * (Math.Abs(OrientationMatrix.m10) / OrientationMatrix.m10)));
