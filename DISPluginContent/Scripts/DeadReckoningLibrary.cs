@@ -12,6 +12,7 @@ public class DeadReckoningLibrary
 
     public static bool DeadReckoning(EntityStatePdu EntityPduToDeadReckon, float DeltaTime, ref EntityStatePdu DeadReckonedPdu)
     {
+        DeadReckonedPdu = PDUUtil.DeepCopyEntityStatePDU(EntityPduToDeadReckon);
         bool supported = true;
 
         if ((EntityPduToDeadReckon.EntityAppearance & (1 << 21)) != 0)
@@ -337,7 +338,11 @@ public class DeadReckoningLibrary
         Quaternion deadReckoningQuat = localQuaternion * CreateDeadReckoningQuaternion(AngularVelocity, deltaTime);
 
         float theta = (float)Math.Asin(-2 * ((deadReckoningQuat.x * deadReckoningQuat.z) - (deadReckoningQuat.w * deadReckoningQuat.y)));
-        if (theta == (Mathf.PI / 2))
+        if (Mathf.Abs(theta) == (Mathf.PI / 2))
+        {
+            theta = (float)1e-5 * Mathf.Sign(theta);
+        }
+        else if (float.IsNaN(theta))
         {
             theta = (float)1e-5;
         }

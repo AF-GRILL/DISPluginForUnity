@@ -272,6 +272,7 @@ public class DISReceiveComponent : MonoBehaviour
         Vector3 rotDiffDegrees = new Vector3(glm.Degrees(NewEntityStatePDU.EntityOrientation.Psi) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Psi),
             glm.Degrees(NewEntityStatePDU.EntityOrientation.Theta) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Theta),
             glm.Degrees(NewEntityStatePDU.EntityOrientation.Phi) - glm.Degrees(MostRecentDeadReckoningPDU.EntityOrientation.Phi));
+
         rotDiffDegrees = Conversions.UnwindRotation(rotDiffDegrees);
         EntityRotationDifference = new Vector3(glm.Radians(rotDiffDegrees.x), glm.Radians(rotDiffDegrees.y), glm.Radians(rotDiffDegrees.z));
 

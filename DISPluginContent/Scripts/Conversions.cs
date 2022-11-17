@@ -15,15 +15,15 @@ public class Conversions
         Vector3 unwoundVector = new Vector3(RotationDegrees.x % 360, RotationDegrees.y % 360, RotationDegrees.z % 360);
 
         //Check each axis. If axis outside -180 to 180 degree range, take shorter path
-        if (RotationDegrees.x <= -180 || RotationDegrees.x >= 180)
+        if (unwoundVector.x <= -180 || unwoundVector.x >= 180)
         {
             unwoundVector.x += (RotationDegrees.x <= -180) ? 360 : -360;
         }
-        if (RotationDegrees.y <= -180 || RotationDegrees.y >= 180)
+        if (unwoundVector.y <= -180 || unwoundVector.y >= 180)
         {
             unwoundVector.y += (RotationDegrees.y <= -180) ? 360 : -360;
         }
-        if (RotationDegrees.z <= -180 || RotationDegrees.z >= 180)
+        if (unwoundVector.z <= -180 || unwoundVector.z >= 180)
         {
             unwoundVector.z += (RotationDegrees.z <= -180) ? 360 : -360;
         }
@@ -557,8 +557,9 @@ public class Conversions
 
         FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
 
-        unityRotation.z = HeadingPitchRollDegrees.Roll + XAxisRotationAngle;
-        unityRotation.x = HeadingPitchRollDegrees.Pitch + YAxisRotationAngle;
+        //Unity Roll and Pitch axes are backwards from DIS. Invert as needed
+        unityRotation.z = -HeadingPitchRollDegrees.Roll + XAxisRotationAngle;
+        unityRotation.x = -HeadingPitchRollDegrees.Pitch + YAxisRotationAngle;
         unityRotation.y = HeadingPitchRollDegrees.Heading + ZAxisRotationAngle;
 
         return unityRotation;
@@ -662,8 +663,9 @@ public class Conversions
         float YAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.DownVector, OriginNorthEastDown.DownVector);
         float ZAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.NorthVector, OriginNorthEastDown.NorthVector);
 
-        headingPitchRoll.Roll = UnityRotation.z - XAxisRotationAngle;
-        headingPitchRoll.Pitch = UnityRotation.x - YAxisRotationAngle;
+        //Unity Roll and Pitch axes are backwards from DIS. Invert as needed
+        headingPitchRoll.Roll = -UnityRotation.z - XAxisRotationAngle;
+        headingPitchRoll.Pitch = -UnityRotation.x - YAxisRotationAngle;
         headingPitchRoll.Heading = UnityRotation.y - ZAxisRotationAngle;
 
         return headingPitchRoll;

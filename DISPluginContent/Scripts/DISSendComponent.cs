@@ -97,7 +97,6 @@ public class DISSendComponent : MonoBehaviour
     public EntityStatePdu MostRecentDeadReckoningPDU = new EntityStatePdu();
 
     private float DeltaTimeSinceLastPDU = 0;
-    private EntityStatePdu PreviousEntityStatePDU;
 
     private float TimeOfLastParametersCalculation;
     private Vector3 LastCalculatedUnityLocation;
@@ -141,7 +140,6 @@ public class DISSendComponent : MonoBehaviour
         //Form Entity State PDU packets
         MostRecentEntityStatePDU = FormEntityStatePDU();
         MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-        PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
         //Begin play with Entity State PDU
         if (pduSenderScript == null)
@@ -221,7 +219,6 @@ public class DISSendComponent : MonoBehaviour
 
             MostRecentEntityStatePDU = FormEntityStatePDU();
             MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-            PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
             if (pduSenderScript != null)
             {
@@ -239,7 +236,6 @@ public class DISSendComponent : MonoBehaviour
 
             MostRecentEntityStatePDU = FormEntityStatePDU();
             MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-            PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
             EmitAppropriatePDU(MostRecentEntityStatePDU);
         }
@@ -254,7 +250,6 @@ public class DISSendComponent : MonoBehaviour
 
             MostRecentEntityStatePDU = FormEntityStatePDU();
             MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-            PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
             if (pduSenderScript != null)
             {
@@ -390,11 +385,11 @@ public class DISSendComponent : MonoBehaviour
     {
         bool outsideThreshold = false;
 
-        dvec3 AngularVelocityVector = new dvec3(PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.X,
-            PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Y, PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Z);
+        dvec3 AngularVelocityVector = new dvec3(MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.X,
+            MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Y, MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Z);
 
         //Get the entity orientation quaternion
-        Quaternion entityOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(PreviousEntityStatePDU.EntityOrientation.Psi, PreviousEntityStatePDU.EntityOrientation.Theta, PreviousEntityStatePDU.EntityOrientation.Phi);
+        Quaternion entityOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(MostRecentEntityStatePDU.EntityOrientation.Psi, MostRecentEntityStatePDU.EntityOrientation.Theta, MostRecentEntityStatePDU.EntityOrientation.Phi);
         //Get the entity dead reckoning quaternion
         Quaternion deadReckoningQuaternion = DeadReckoningLibrary.CreateDeadReckoningQuaternion(AngularVelocityVector, DeltaTimeSinceLastPDU);
         //Calculate the new orientation quaternion
@@ -418,6 +413,13 @@ public class DISSendComponent : MonoBehaviour
         }
 
         float quaternionDotProduct = Quaternion.Dot(actualOrientationQuaternion, DR_OrientationQuaternion);
+        //Check if the dot product was -1 --- Means the quaternions were exact opposites, which means they represent the same angle. Rerun dot product on inverse of one of them just in case...
+        if(Mathf.Approximately(quaternionDotProduct, -1.0f))
+        {
+            Quaternion inverseActual = Quaternion.Inverse(actualOrientationQuaternion);
+            inverseActual.w *= -1;
+            quaternionDotProduct = Quaternion.Dot(inverseActual, DR_OrientationQuaternion);
+        }
 
         double OrientationQuaternionThresholdEpsilon = 1 - Math.Cos(glm.Radians(DeadReckoningOrientationThresholdDegrees / 2));
 
@@ -431,11 +433,11 @@ public class DISSendComponent : MonoBehaviour
     {
         bool outsideThreshold = false;
 
-        dvec3 AngularVelocityVector = new dvec3(PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.X,
-            PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Y, PreviousEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Z);
+        dvec3 AngularVelocityVector = new dvec3(MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.X,
+            MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Y, MostRecentEntityStatePDU.DeadReckoningParameters.EntityAngularVelocity.Z);
 
         // Get the entity's current orientation matrix
-        dmat3 OrientationMatrix = DeadReckoningLibrary.GetEntityOrientationMatrix(PreviousEntityStatePDU.EntityOrientation);
+        dmat3 OrientationMatrix = DeadReckoningLibrary.GetEntityOrientationMatrix(MostRecentEntityStatePDU.EntityOrientation);
         // Get the change in rotation for this time step
         dmat3 DeadReckoningMatrix = DeadReckoningLibrary.CreateDeadReckoningMatrix(AngularVelocityVector, DeltaTimeSinceLastPDU);
         // Calculate the new orientation matrix
@@ -487,7 +489,6 @@ public class DISSendComponent : MonoBehaviour
         {
             MostRecentEntityStatePDU = FormEntityStatePDU();
             MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
-            PreviousEntityStatePDU = MostRecentEntityStatePDU;
 
             EmitAppropriatePDU(MostRecentEntityStatePDU);
 
