@@ -4,10 +4,8 @@
 
 - This plugin was made for Unity 2020.3.26f1
 - Clone this repository
-- Put the unpacked plugin folder in the 'Plugins' folder for the desired project.
-    - The plugins folder should be located in the root directory of the project. If not, create one.
-- Launch the project and allow Unreal to rebuild needed modules.
-- The GRILL DIS for Unreal plugin should be enabled upon the project opening.
+- Put the unpacked plugin folder in the 'Assets' folder for the desired project.
+- Launch the project and allow Unity to build the newly added files.
 
 # Required Game Objects
 - Certain game objects are required to be in a given scene in order for the plugin to work as desired. These are listed below:
