@@ -1,6 +1,8 @@
-using UDPReceiverMulti;
-interface PDUProcessorInterface
+namespace GRILLDIS
 {
-    void OnUDPPacketReceived(byte[] bytes, UDPReceiverMulti.UDPReceiverMulti udpReceiverMulti);
-    
+    interface PDUProcessorInterface
+    {
+        void OnUDPPacketReceived(byte[] bytes, UDPReceiverMulti.UDPReceiverMulti udpReceiverMulti);
+
+    }
 }

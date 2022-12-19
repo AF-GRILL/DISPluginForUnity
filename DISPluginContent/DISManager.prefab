@@ -47,33 +47,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ExerciseID: 13
-  SiteID: 14
-  ApplicationID: 88
-  entityTypes:
-  - friendlyName: MiG
-    entityTypes:
-    - entityKind: 1
-      domain: 2
-      country: 225
-      category: 1
-      subcategory: 3
-      specific: 3
-      extra: 1
-    - entityKind: 1
-      domain: 2
-      country: 225
-      category: 1
-      subcategory: 3
-      specific: 0
-      extra: 0
-    - entityKind: 1
-      domain: 2
-      country: 222
-      category: 1
-      subcategory: 2
-      specific: 0
-      extra: 0
-    gameObject: {fileID: 1956214152485627141, guid: cc025ea5ac43a9d49a49752365932ede, type: 3}
+  SiteID: 5
+  ApplicationID: 2
+  entityTypes: []
   DISEntityParentContainer: {fileID: 0}
   e_CreateDISEntity:
     m_PersistentCalls:
@@ -97,7 +73,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ipAddressString: 0.0.0.0
-  port: 3001
+  port: 3000
   autoConnectAtStart: 0
   useMulticast: 0
   allowLoopback: 1
@@ -115,9 +91,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxQueueSize: 1024
-  connectionType: 0
+  connectionType: 1
   ipAddressString: 10.0.1.123
-  port: 5014
+  port: 3000
   autoConnectAtStart: 0
 --- !u!114 &6292510029869354289
 MonoBehaviour:

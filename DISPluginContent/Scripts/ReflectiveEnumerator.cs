@@ -3,20 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-public static class ReflectiveEnumerator
+namespace GRILLDIS
 {
-    static ReflectiveEnumerator() { }
-
-    public static IEnumerable<T> GetEnumerableOfType<T>(params object[] constructorArgs) where T : class
+    public static class ReflectiveEnumerator
     {
-        List<T> objects = new List<T>();
-        foreach (Type type in
-            Assembly.GetAssembly(typeof(T)).GetTypes()
-            .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(T))))
+        static ReflectiveEnumerator() { }
+
+        public static IEnumerable<T> GetEnumerableOfType<T>(params object[] constructorArgs) where T : class
         {
-            objects.Add((T)Activator.CreateInstance(type, constructorArgs));
+            List<T> objects = new List<T>();
+            foreach (Type type in
+                Assembly.GetAssembly(typeof(T)).GetTypes()
+                .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(T))))
+            {
+                objects.Add((T)Activator.CreateInstance(type, constructorArgs));
+            }
+            //objects.Sort();
+            return objects;
         }
-        //objects.Sort();
-        return objects;
     }
 }

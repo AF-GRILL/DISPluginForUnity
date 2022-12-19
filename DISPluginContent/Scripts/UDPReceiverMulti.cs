@@ -7,7 +7,7 @@ using System.Threading;
 using UnityEngine;
 using OpenDis.Dis1998;
 
-namespace UDPReceiverMulti
+namespace GRILLDIS.UDPReceiverMulti
 {
     class UDPReceiverMulti
     {
