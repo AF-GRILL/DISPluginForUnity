@@ -568,35 +568,6 @@ namespace GRILLDIS
         }
 
         /// <summary>
-        /// Converts the given Unity Engine vector to be in terms of ECEF. Resulting vector will be same magnitude, but in direction of ECEF NED vectors of the given location.
-        /// </summary>
-        /// <param name="UnityVector">The Unity vector to be converted to ECEF coordinates</param>
-        /// <param name="GeoreferencingScript"> The GeoreferencingScript that is attached to the DIS Game Manager</param>
-        /// <param name="CurrentLocation">The Unity Engine location that the entity is at</param>
-        /// <returns>A vector that is terms of ECEF or the same vector if the Georeference script is invalid.</returns>
-        public static Vector3Double ConvertUnityVectorToECEFVector(Vector3 UnityVector, GeoreferenceSystem GeoreferencingScript, Vector3 CurrentLocation)
-        {
-            Vector3Double ecefVector = new Vector3Double();
-
-            if (GeoreferencingScript)
-            {
-                FLatLonAlt lla = GeoreferencingScript.UnityFlatearthToLatLonAlt(CurrentLocation);
-                FNorthEastDown northEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(lla.Latitude, lla.Longitude);
-
-                //Convert the Unity Engine linear velocity to be in terms of ECEF
-                Vector3 dvecECEFVector = northEastDownVectors.NorthVector * UnityVector.z + northEastDownVectors.EastVector * UnityVector.x - northEastDownVectors.DownVector * UnityVector.y;
-                ecefVector = new Vector3Double
-                {
-                    X = dvecECEFVector.x,
-                    Y = dvecECEFVector.y,
-                    Z = dvecECEFVector.z
-                };
-            }
-
-            return ecefVector;
-        }
-
-        /// <summary>
         /// Gets Unity rotation from a DIS entity state PDU
         /// </summary>
         /// <param name="EntityStatePduIn">The DIS PDU indicating the current state of the DIS entity</param>

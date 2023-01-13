@@ -78,14 +78,14 @@ The PDU Sender script has the following settings:
     - **Exercise ID**: The exercise ID of the DIS sim this project will be associated with.
     - **Site ID**: The site ID of this DIS sim.
     - **Application ID**: The application ID of this DIS sim.
-	- **Entity Types**: Contains desired game object to DIS Enumeration mappings.
-        - _**NOTE:**_ Although not required, for proper DIS delegation each game object in the Entity Types mapping should have a DIS Component script attached to it.
+	- **DIS Enumeration Mapping**: Contains desired game object to DIS Enumeration mappings.
+        - _**NOTE:**_ Although not required, for proper DIS delegation each game object in the Entity Types mapping should have a DIS Receive Component script attached to it.
 	- **DIS Entity Parent Container**: The parent that all of the DIS Entities spawned by the plugin should be placed under.
 
 ![DISGameManagerScript](Resources/ReadMeImages/DISGameManagerScript.png)
 
 - The DIS Game Manager contains:
-    - Listing of DIS Entities and their associated enumeration. This is loaded from the Entity Types variable.
+    - Listing of DIS Entities and their associated enumeration. This is loaded from the DIS Enumeration Mapping variable.
     - Listing of Entity IDs and their active DIS Entities in the world. This is a living list that is added to/removed from as new packets are received.
     - The DIS exercise, site, and application IDs.
 - Notable functions:
@@ -225,6 +225,31 @@ The PDU Sender script has the following settings:
         - The position threshold in meters to use for dead reckoning. If the dead reckoning position deviates more than this value away from the actual position in any axis, a new Entity State PDU will be sent.
     - Dead Reckoning Orientation Threshold Degrees
         - The orientation threshold in degrees to use for dead reckoning. If the dead reckoning orientation deviates more than this value away from the actual orientation, a new Entity State PDU will be sent.
+
+# DIS Enumeration Mappings
+
+![DISEnumMappingsUAsset](Resources/ReadMeImages/DISEnumMappings.png)
+
+- The DIS Enumeration Mapping asset allows for mappings between DIS Enumerations and Unity game objects to be made.
+- To create a new DIS Enumeration Mapping asset:
+    - Click on the 'Assets' tab
+	- Hover 'Create'
+	- Hover 'GRILL DIS'
+	- Select the 'DIS Enumeration Mapping' asset option.
+- Once created, mappings can be created by opening up the created asset.
+- The settings it contains are:
+    - Entity Type Mappings
+        - Mapping of all available Game Object to DIS Enumeration mappings.
+    - Friendly Name
+        - Friendly name of this mapping for easy user lookup
+    - Game Object
+        - The Unity game object that this mapping should point to.
+        - _**NOTE:**_ Although not required, for proper DIS delegation each game object used here should have a DIS Receive Component script attached to it.
+    - Entity Types
+        - All desired DIS Enumerations that should point to this game object.
+        - _**NOTE**_: If duplicate enumerations are found across multiple entities, an appropriate message is logged and the most recent encountered game object to enumeration mapping is used.
+        - _**NOTE**_: If a DIS Enumeration is received on the network and no mapping exists for it, an appropriate message is logged and the packet is ignored.
+        - For a breakdown of the individual elements of a DIS Enumeration, refer to the [Naval Postgraduate School's Documentation](http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disenumerations/jdbehtmlfiles/pdu/28.htm#:~:text=Description%3A%20The%20type%20of%20entity,necessary%20for%20describing%20the%20entity.).
 
 # DIS Conversion Library
 

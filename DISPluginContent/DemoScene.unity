@@ -139,6 +139,10 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3740386622288005697, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
+      propertyPath: DISEnumerationMapping
+      value: 
+      objectReference: {fileID: 11400000, guid: e320ea4a485c6394f9e4898d4bd6f299, type: 2}
+    - target: {fileID: 3740386622288005697, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: DISEntityParentContainer
       value: 
       objectReference: {fileID: 1360762922}
@@ -393,7 +397,6 @@ GameObject:
   - component: {fileID: 969109583}
   - component: {fileID: 969109582}
   - component: {fileID: 969109581}
-  - component: {fileID: 969109580}
   m_Layer: 0
   m_Name: Cylinder
   m_TagString: Untagged
@@ -401,18 +404,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &969109580
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 969109579}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8eff4133c242dc44f89fe6676ecf6d65, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &969109581
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -523,7 +514,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1360762922
 GameObject:
@@ -553,7 +544,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2060282598 stripped
 GameObject:

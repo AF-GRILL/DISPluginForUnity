@@ -34,9 +34,8 @@ namespace GRILLDIS
         /// <summary>
         /// The mapping between DIS Entity IDs and corresponding entity actors.
         /// </summary>
-        [SerializeField]
-        [Tooltip("The mapping between DIS Entity IDs and corresponding entity actors.")]
-        public List<EntityTypeMapping> entityTypes = new List<EntityTypeMapping>();
+        [Tooltip("The mappings between DIS Entity IDs and corresponding entity actors.")]
+        public DISEnumerationMappings DISEnumerationMapping;
 
         /// <summary>
         /// The parent container that spawned DIS entities should be placed in.
@@ -69,7 +68,7 @@ namespace GRILLDIS
 
         private void InitializeEntityTypeMappings()
         {
-            foreach (EntityTypeMapping entityTypeMapping in entityTypes)
+            foreach (EntityTypeMapping entityTypeMapping in DISEnumerationMapping.EntityTypeMappings)
             {
                 foreach (EntityTypeEditor entityTypeEditor in entityTypeMapping.entityTypes)
                 {

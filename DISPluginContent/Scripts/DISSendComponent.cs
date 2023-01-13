@@ -510,11 +510,26 @@ namespace GRILLDIS
             {
                 Vector3 curLoc = transform.position;
                 Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
+                
+                Vector3Double originECEF = georeferenceScript.GetOriginECEF();
+                Vector3Double curLinVelECEF = georeferenceScript.UnityFlatearthToECEF(curUnityLinearVelocity);
+                Vector3Double oldLinVelECEF = georeferenceScript.UnityFlatearthToECEF(LastCalculatedUnityLinearVelocity);
 
                 //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
-                Vector3Double ecefLinearVelocityDouble = Conversions.ConvertUnityVectorToECEFVector(curUnityLinearVelocity, georeferenceScript, curLoc);
+                Vector3Double ecefLinearVelocityDouble = new Vector3Double
+                {
+                    X = curLinVelECEF.X - originECEF.X,
+                    Y = curLinVelECEF.Y - originECEF.Y,
+                    Z = curLinVelECEF.Z - originECEF.Z
+                };
                 ECEFLinearVelocity = new Vector3((float)ecefLinearVelocityDouble.X, (float)ecefLinearVelocityDouble.Y, (float)ecefLinearVelocityDouble.Z);
-                Vector3Double prevECEFLinearVelocity = Conversions.ConvertUnityVectorToECEFVector(LastCalculatedUnityLinearVelocity, georeferenceScript, LastCalculatedUnityLocation);
+                
+                Vector3Double prevECEFLinearVelocity = new Vector3Double
+                {
+                    X = oldLinVelECEF.X - originECEF.X,
+                    Y = oldLinVelECEF.Y - originECEF.Y,
+                    Z = oldLinVelECEF.Z - originECEF.Z
+                };
 
                 ECEFLinearAcceleration = new Vector3
                 {
