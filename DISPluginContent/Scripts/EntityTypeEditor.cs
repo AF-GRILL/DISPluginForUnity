@@ -54,13 +54,15 @@ namespace GRILLDIS
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("(");
-            sb.Append(category + DELIMITER_PERIOD);
-            sb.Append(country + DELIMITER_PERIOD);
-            sb.Append(domain + DELIMITER_PERIOD);
             sb.Append(entityKind + DELIMITER_PERIOD);
-            sb.Append(extra + DELIMITER_PERIOD);
+            sb.Append(domain + DELIMITER_PERIOD);
+            sb.Append(country + DELIMITER_PERIOD);
+            sb.Append(category + DELIMITER_PERIOD);
+            sb.Append(subcategory + DELIMITER_PERIOD);
             sb.Append(specific + DELIMITER_PERIOD);
-            sb.Append(subcategory);
+            sb.Append(extra);
+            
+            
             sb.Append(")");
             return sb.ToString();
         }
