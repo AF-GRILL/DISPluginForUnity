@@ -1,6 +1,7 @@
 using OpenDis.Core;
 using OpenDis.Dis1998;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -39,6 +40,9 @@ namespace GRILLDIS
         /// </summary>
         [HideInInspector]
         public bool autoConnectAtStart = true;
+
+        [HideInInspector]
+        public UnityEvent<SocketException> OnFailedToConnect = new UnityEvent<SocketException>();
 
         private ConcurrentQueue<byte[]> pdus = new ConcurrentQueue<byte[]>();
         private bool sending = true;
@@ -124,6 +128,8 @@ namespace GRILLDIS
             if (thread == null)
             {
                 IPAddress IP = IPAddress.Parse(ipAddressString);
+                if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
+                { OnFailedToConnect.Invoke(new SocketException(10048)); return; }
 
                 thread = new Thread(() => SenderWork(IP));
                 thread.Start();
