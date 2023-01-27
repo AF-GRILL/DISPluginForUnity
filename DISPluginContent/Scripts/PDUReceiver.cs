@@ -88,8 +88,8 @@ namespace GRILLDIS
 
         public void startUDPReceiver()
         {
-            if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
-            { OnFailedToConnect.Invoke(new SocketException(10048)); return; }
+            //if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
+            //{ OnFailedToConnect.Invoke(new SocketException(10048)); return; }
 
             ipAddress = IPAddress.Any;
             if (ipAddressString != "0.0.0.0")

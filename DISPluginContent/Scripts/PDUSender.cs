@@ -129,8 +129,8 @@ namespace GRILLDIS
             if (thread == null)
             {
                 IPAddress IP = IPAddress.Parse(ipAddressString);
-                if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
-                { OnFailedToConnect.Invoke(new SocketException(10048)); return; }
+                //if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
+                //{ OnFailedToConnect.Invoke(new SocketException(10048)); return; }
 
                 thread = new Thread(() => SenderWork(IP));
                 thread.Start();
