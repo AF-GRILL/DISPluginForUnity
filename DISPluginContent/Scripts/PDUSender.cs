@@ -1,5 +1,6 @@
 using OpenDis.Core;
 using OpenDis.Dis1998;
+using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Net;
@@ -43,12 +44,13 @@ namespace GRILLDIS
         public bool autoConnectAtStart = true;
 
         [HideInInspector]
-        public UnityEvent<SocketException> OnFailedToConnect = new UnityEvent<SocketException>();
+        public UnityEvent<Exception> OnFailedToConnect = new UnityEvent<Exception>();
 
         private ConcurrentQueue<byte[]> pdus = new ConcurrentQueue<byte[]>();
         private bool sending = true;
         private Thread thread;
         private DataOutputStream dos = new DataOutputStream(Endian.Big);
+        private Exception exception;
 
         void Awake() { if (autoConnectAtStart) { Init(); } }
         void OnApplicationQuit() { if (thread != null) { Stop(); } }
@@ -56,70 +58,78 @@ namespace GRILLDIS
         //Method run by the thread
         private void SenderWork(IPAddress targetIP)
         {
-            switch (connectionType)
+            try
             {
-                #region Unicast
+                switch (connectionType)
+                {
+                    #region Unicast
 
-                case ConnectionType.Unicast:
-                    IPEndPoint uCastEndPoint = new IPEndPoint(targetIP, port);
-                    UdpClient client = new UdpClient();
+                    case ConnectionType.Unicast:
+                        IPEndPoint uCastEndPoint = new IPEndPoint(targetIP, port);
+                        UdpClient client = new UdpClient();
 
-                    while (sending)
-                    {
-                        if (pdus.TryDequeue(out byte[] pdu))
+                        while (sending)
                         {
-                            client.Send(pdu, pdu.Length, uCastEndPoint);
+                            if (pdus.TryDequeue(out byte[] pdu))
+                            {
+                                client.Send(pdu, pdu.Length, uCastEndPoint);
+                            }
                         }
-                    }
-                    client.Close();
-                    break;
+                        client.Close();
+                        break;
 
-                #endregion Unicast
+                    #endregion Unicast
 
-                #region Broadcast
+                    #region Broadcast
 
-                case ConnectionType.Broadcast:
-                    EndPoint broadcastEP = new IPEndPoint(IPAddress.Broadcast, port);
-                    Socket broadcastSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    broadcastSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
+                    case ConnectionType.Broadcast:
+                        EndPoint broadcastEP = new IPEndPoint(IPAddress.Broadcast, port);
+                        Socket broadcastSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                        broadcastSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
 
-                    while (sending)
-                    {
-                        if (pdus.TryDequeue(out byte[] pdu))
+                        while (sending)
                         {
-                            broadcastSocket.SendTo(pdu, broadcastEP);
+                            if (pdus.TryDequeue(out byte[] pdu))
+                            {
+                                broadcastSocket.SendTo(pdu, broadcastEP);
+                            }
                         }
-                    }
-                    broadcastSocket.Close();
-                    break;
+                        broadcastSocket.Close();
+                        break;
 
-                #endregion Broadcast
+                    #endregion Broadcast
 
-                #region Multicast
+                    #region Multicast
 
-                case ConnectionType.Multicast:
+                    case ConnectionType.Multicast:
 
-                    UdpClient mcastSocket = new UdpClient();
+                        UdpClient mcastSocket = new UdpClient();
 
-                    mcastSocket.JoinMulticastGroup(targetIP, LocalIPAddress());
+                        mcastSocket.JoinMulticastGroup(targetIP, LocalIPAddress());
 
-                    IPEndPoint mcastEP = new IPEndPoint(targetIP, port);
+                        IPEndPoint mcastEP = new IPEndPoint(targetIP, port);
 
-                    while (sending)
-                    {
-                        if (pdus.TryDequeue(out byte[] pdu))
+                        while (sending)
                         {
-                            mcastSocket.Send(pdu, pdu.Length, mcastEP);
+                            if (pdus.TryDequeue(out byte[] pdu))
+                            {
+                                mcastSocket.Send(pdu, pdu.Length, mcastEP);
+                            }
                         }
-                    }
-                    mcastSocket.Close();
-                    break;
+                        mcastSocket.Close();
+                        break;
 
-                #endregion Multicast
+                    #endregion Multicast
 
-                default:
-                    Debug.LogError("ERROR Invalid connection type on PDU sender");
-                    break;
+                    default:
+                        Debug.LogError("ERROR Invalid connection type on PDU sender");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+                Stop();
             }
         }
 
@@ -132,8 +142,10 @@ namespace GRILLDIS
                 //if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
                 //{ OnFailedToConnect.Invoke(new SocketException(10048)); return; }
 
+                exception = null;
                 thread = new Thread(() => SenderWork(IP));
                 thread.Start();
+                
             }
             else
             {
@@ -149,6 +161,10 @@ namespace GRILLDIS
                 sending = false;
                 thread.Join();
                 thread = null;
+                if (exception != null)
+                {
+                    OnFailedToConnect.Invoke(exception);
+                }
             }
             else
             {

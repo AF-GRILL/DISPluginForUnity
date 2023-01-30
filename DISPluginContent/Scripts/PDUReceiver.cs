@@ -47,7 +47,7 @@ namespace GRILLDIS
         public string multicastAddress = "224.252.0.1";
 
         [HideInInspector]
-        public UnityEvent<SocketException> OnFailedToConnect = new UnityEvent<SocketException>();
+        public UnityEvent<Exception> OnFailedToConnect = new UnityEvent<Exception>();
 
         // Start is called before the first frame update
         private UDPReceiverMulti.UDPReceiverMulti receiver;
@@ -88,19 +88,24 @@ namespace GRILLDIS
 
         public void startUDPReceiver()
         {
-            //if (System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port))
-            //{ OnFailedToConnect.Invoke(new SocketException(10048)); return; }
 
             ipAddress = IPAddress.Any;
             if (ipAddressString != "0.0.0.0")
             {
                 ipAddress = IPAddress.Parse(ipAddressString);
             }
+
             IPAddress multicastIpAddress = IPAddress.Parse(multicastAddress);
             pduProcessor = new PDUProcessor(ProcessDISPacket);
             receiver = new UDPReceiverMulti.UDPReceiverMulti(ipAddress, port, multicastIpAddress, useMulticast, allowLoopback);
             receiver.registerPDUProcessor(pduProcessor);
+            receiver.OnFailedToConnect.AddListener(FailedToConnect);
             receiver.beginReceiving();
+        }
+
+        public void FailedToConnect(Exception ex)
+        {
+            OnFailedToConnect.Invoke(ex);
         }
 
         public void stopUDPReceiver()
