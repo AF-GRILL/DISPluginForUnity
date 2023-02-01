@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using UnityEngine;
+using UnityEngine.Events;
 using OpenDis.Dis1998;
 
 namespace GRILLDIS.UDPReceiverMulti
@@ -52,6 +52,10 @@ namespace GRILLDIS.UDPReceiverMulti
         private static int MAX_QUEUE_SIZE = 1 * 1024;
 
         private bool isCancelled;
+
+        private Exception exception;
+        public UnityEvent<Exception> OnFailedToConnect = new UnityEvent<Exception>();
+
         public UDPReceiverMulti(IPAddress ipAddress, int port, IPAddress multicastAddress, bool useMulticast, bool allowLoopback)
         {
             this.ipAddress = ipAddress;
@@ -75,34 +79,44 @@ namespace GRILLDIS.UDPReceiverMulti
 
         public void beginReceiving()
         {
+            exception = null;
             receiveThread = new Thread(new ThreadStart(BeginReceive));
             receiveThread.Start();
+            receiveThread.Join();
+            if (exception != null) { OnFailedToConnect.Invoke(exception); }
         }
 
         public void stopReceiving()
         {
             isCancelled = true;
-            client.Close();
+            client?.Close(); 
             receiveThread.Abort();
             isCancelled = false;
         }
 
         private void BeginReceive()
         {
-
-            udpPacketList = new ConcurrentList<byte[]>(MAX_QUEUE_SIZE);
-            client = new UdpClient(port);
-            epReceive = new IPEndPoint(ipAddress, port);
-            
-            if (UseMulticast)
+            try
             {
-                //Setup multicast loopback if enabled.
-                client.MulticastLoopback = allowLoopback;
+                udpPacketList = new ConcurrentList<byte[]>(MAX_QUEUE_SIZE);
+                client = new UdpClient(port);
+                epReceive = new IPEndPoint(ipAddress, port);
+            
+                if (UseMulticast)
+                {
+                    //Setup multicast loopback if enabled.
+                    client.MulticastLoopback = allowLoopback;
 
-                epReceive = new IPEndPoint(IPAddress.Any, port);
-                client.JoinMulticastGroup(multicastAddress);
+                    epReceive = new IPEndPoint(IPAddress.Any, port);
+                    client.JoinMulticastGroup(multicastAddress);
+                }
+                client.BeginReceive(new AsyncCallback(asyncReceive), client);
+            }catch (SocketException ex)
+            {
+                exception = ex;
+                stopReceiving();
             }
-            client.BeginReceive(new AsyncCallback(asyncReceive), client);
+            
         }
 
         private byte[] getLatestBytes()

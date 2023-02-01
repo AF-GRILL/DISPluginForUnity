@@ -7,6 +7,8 @@ using OpenDis.Dis1998;
 using System;
 using System.Reflection;
 using System.Linq;
+using System.Net.Sockets;
+using UnityEngine.Events;
 
 namespace GRILLDIS
 {
@@ -43,6 +45,9 @@ namespace GRILLDIS
         /// </summary>
         [HideInInspector]
         public string multicastAddress = "224.252.0.1";
+
+        [HideInInspector]
+        public UnityEvent<Exception> OnFailedToConnect = new UnityEvent<Exception>();
 
         // Start is called before the first frame update
         private UDPReceiverMulti.UDPReceiverMulti receiver;
@@ -83,16 +88,24 @@ namespace GRILLDIS
 
         public void startUDPReceiver()
         {
+
             ipAddress = IPAddress.Any;
             if (ipAddressString != "0.0.0.0")
             {
                 ipAddress = IPAddress.Parse(ipAddressString);
             }
+
             IPAddress multicastIpAddress = IPAddress.Parse(multicastAddress);
             pduProcessor = new PDUProcessor(ProcessDISPacket);
             receiver = new UDPReceiverMulti.UDPReceiverMulti(ipAddress, port, multicastIpAddress, useMulticast, allowLoopback);
             receiver.registerPDUProcessor(pduProcessor);
+            receiver.OnFailedToConnect.AddListener(FailedToConnect);
             receiver.beginReceiving();
+        }
+
+        public void FailedToConnect(Exception ex)
+        {
+            OnFailedToConnect.Invoke(ex);
         }
 
         public void stopUDPReceiver()
