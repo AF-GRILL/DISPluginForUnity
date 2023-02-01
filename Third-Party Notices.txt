@@ -1,0 +1,7 @@
+Open DIS for C# --- BSD 2-Clause License
+	- Located at: GRILLDIS\DISPluginContent\CsharpDis6
+	- See License file located in the "GRILLDIS\DISPluginContent\CsharpDis6" folder for license info.
+
+GLM Sharp --- The MIT License (MIT)
+	- Located at: GRILLDIS\DISPluginContent\GlmSharp
+	- See License file located in the "GRILLDIS\DISPluginContent\GlmSharp" folder for license info.
