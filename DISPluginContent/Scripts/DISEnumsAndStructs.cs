@@ -80,6 +80,15 @@ namespace GRILLDIS
         FVB
     }
 
+    public enum EDestroyCode
+    {
+        DetonationPDU,
+        TimeOut,
+        Disabled,
+        RemovePDU,
+        UnityDestroy
+    }
+
     public struct FEastNorthUp
     {
         public Vector3 EastVector;

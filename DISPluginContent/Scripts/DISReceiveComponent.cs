@@ -179,6 +179,7 @@ namespace GRILLDIS
         {
             //Delay for amount of time and then destroy
             yield return new WaitForSeconds(timeToDelay);
+            disGameManagerScript.e_DestroyDISEntity.Invoke(this.gameObject, EDestroyCode.TimeOut);
             Destroy(gameObject);
         }
 
@@ -198,6 +199,7 @@ namespace GRILLDIS
             if ((NewEntityStatePDU.EntityAppearance & (1 << 23)) != 0)
             {
                 Debug.Log(NewEntityStatePDU.EntityID.ToString() + " Entity Appearance is set to deactivated, deleting entity...");
+                disGameManagerScript.e_DestroyDISEntity.Invoke(this.gameObject, EDestroyCode.Disabled);
                 Destroy(gameObject);
                 return;
             }
@@ -226,6 +228,7 @@ namespace GRILLDIS
             if ((NewEntityStateUpdatePDU.EntityAppearance & (1 << 23)) != 0)
             {
                 Debug.Log(NewEntityStateUpdatePDU.EntityID.ToString() + " Entity Appearance is set to deactivated, deleting entity...");
+                disGameManagerScript.e_DestroyDISEntity.Invoke(this.gameObject, EDestroyCode.Disabled);
                 Destroy(gameObject);
                 return;
             }
@@ -467,7 +470,6 @@ namespace GRILLDIS
         {
             if (disGameManagerScript)
             {
-                disGameManagerScript.e_DestroyDISEntity.Invoke(this.gameObject);
                 disGameManagerScript.RemoveDISEntityFromMap(CurrentEntityID.toEntityID());
             }
             else
@@ -476,4 +478,5 @@ namespace GRILLDIS
             }
         }
     }
+
 }
