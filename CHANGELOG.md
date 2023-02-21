@@ -1,5 +1,6 @@
 # Beta 0.4.1 -- Initial Unity version
 
+- Made DIS Enumeration Mappings a scriptable object for easy reuse.
 - Bug fixes to the DIS Sending component, Dead Reckoning, and unwinding rotations in the Conversions library.
 - Updated LLA/ECEF conversions in Conversions library to more accurate math.
 
