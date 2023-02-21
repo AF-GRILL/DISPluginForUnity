@@ -228,7 +228,7 @@ The PDU Sender script has the following settings:
 
 # DIS Enumeration Mappings
 
-![DISEnumMappingsUAsset](Resources/ReadMeImages/DISEnumMappings.png)
+![DISEnumMappingsUAsset](Resources/ReadMeImages/DISEnumerationMappings.png)
 
 - The DIS Enumeration Mapping asset allows for mappings between DIS Enumerations and Unity game objects to be made.
 - To create a new DIS Enumeration Mapping asset:
