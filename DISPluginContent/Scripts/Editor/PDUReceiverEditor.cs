@@ -17,7 +17,7 @@ namespace GRILLDIS
 
             //Draw IP Address if relavent
             EditorGUI.BeginDisabledGroup(receiver.useMulticast);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("ipAddressString"), new GUIContent("IP Address", "The IP Address to receive UDP packets from. An IP Address of 0.0.0.0 listens to all connection on the specified port."));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("ipAddressString"), new GUIContent("IP Address", "The IP Address to receive UDP packets from. An IP Address of 0.0.0.0 listens to all connections on the specified port."));
             EditorGUI.EndDisabledGroup();
 
             //Draw Multicast Address if relavent

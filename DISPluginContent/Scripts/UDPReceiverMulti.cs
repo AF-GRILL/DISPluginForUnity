@@ -99,9 +99,14 @@ namespace GRILLDIS.UDPReceiverMulti
             try
             {
                 udpPacketList = new ConcurrentList<byte[]>(MAX_QUEUE_SIZE);
-                client = new UdpClient(port);
                 epReceive = new IPEndPoint(ipAddress, port);
-            
+
+                //Make the receive socket non-binding to make the IP Endpoint reusable
+                client = new UdpClient();
+                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                client.ExclusiveAddressUse = false;
+                client.Client.Bind(epReceive);
+
                 if (UseMulticast)
                 {
                     //Setup multicast loopback if enabled.
@@ -116,7 +121,6 @@ namespace GRILLDIS.UDPReceiverMulti
                 exception = ex;
                 stopReceiving();
             }
-            
         }
 
         private byte[] getLatestBytes()
@@ -158,7 +162,6 @@ namespace GRILLDIS.UDPReceiverMulti
                     pduProcessor.OnUDPPacketReceived(receivedBytes, this);
                 }
             }
-            
         }
 
         static void Main(string[] args)
