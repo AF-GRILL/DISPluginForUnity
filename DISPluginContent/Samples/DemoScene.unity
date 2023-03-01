@@ -134,6 +134,10 @@ PrefabInstance:
       propertyPath: port
       value: 5014
       objectReference: {fileID: 0}
+    - target: {fileID: 3424637735621093189, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
+      propertyPath: autoConnectAtStart
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3740386622288005697, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: SiteID
       value: 5
@@ -440,9 +444,9 @@ MonoBehaviour:
   CurrentEntityType:
     entityKind: 1
     domain: 2
-    country: 225
+    country: 222
     category: 1
-    subcategory: 3
+    subcategory: 2
     specific: 0
     extra: 0
   CurrentEntityID:
