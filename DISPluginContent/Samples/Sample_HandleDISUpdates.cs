@@ -20,15 +20,15 @@ namespace GRILLDIS.Sample
 
         public void HandleDeadReckoningUpdate(EntityStatePdu DeadReckonedPDUIn)
         {
-            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(DeadReckonedPDUIn, georeferenceSystemScript, out Vector3Double unityLoc, out Vector3 unityRot);
-            transform.position = new Vector3((float)unityLoc.X, (float)unityLoc.Y, (float)unityLoc.Z);
+            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(DeadReckonedPDUIn, georeferenceSystemScript, out Vector3 unityLoc, out Vector3 unityRot);
+            transform.position = unityLoc;
             transform.rotation = Quaternion.Euler(unityRot);
         }
 
         public void HandleEntityStateProcessed(EntityStatePdu EntityStatePDUIn)
         {
-            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(EntityStatePDUIn, georeferenceSystemScript, out Vector3Double unityLoc, out Vector3 unityRot);
-            transform.position = new Vector3((float)unityLoc.X, (float)unityLoc.Y, (float)unityLoc.Z);
+            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(EntityStatePDUIn, georeferenceSystemScript, out Vector3 unityLoc, out Vector3 unityRot);
+            transform.position = unityLoc;
             transform.rotation = Quaternion.Euler(unityRot);
         }
 

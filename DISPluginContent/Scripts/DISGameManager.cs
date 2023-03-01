@@ -132,8 +132,7 @@ namespace GRILLDIS
                         Quaternion spawnRotation = Quaternion.Euler(0, 0, 0);
                         if (georeferenceScript)
                         {
-                            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(entityStatePdu, georeferenceScript, out Vector3Double unityLoc, out Vector3 unityRot);
-                            spawnPosition = new Vector3((float)unityLoc.X, (float)unityLoc.Y, (float)unityLoc.Z);
+                            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(entityStatePdu, georeferenceScript, out spawnPosition, out Vector3 unityRot);
                             spawnRotation = Quaternion.Euler(unityRot);
                         }
 

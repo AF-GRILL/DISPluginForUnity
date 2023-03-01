@@ -595,17 +595,18 @@ namespace GRILLDIS
         /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
         /// <param name="UnityLocation">The location of the entity in Unity</param>
         /// <param name="UnityRotation">The rotation of the entity in Unity</param>
-        public static void GetUnityLocationAndOrientationFromEntityStatePdu(EntityStatePdu EntityStatePdu, GeoreferenceSystem GeoReferencingSystem, out Vector3Double UnityLocation, out Vector3 UnityRotation)
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        public static void GetUnityLocationAndOrientationFromEntityStatePdu(EntityStatePdu EntityStatePdu, GeoreferenceSystem GeoReferencingSystem, out Vector3 UnityLocation, out Vector3 UnityRotation, Vector3 OriginRebasingOffset = default)
         {
             if (GeoReferencingSystem == null)
             {
-                UnityLocation = new Vector3Double();
+                UnityLocation = new Vector3();
                 UnityRotation = Vector3.zero;
                 Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
                 return;
             }
 
-            UnityLocation = GeoReferencingSystem.ECEFToUnityFlatearth(EntityStatePdu.EntityLocation);
+            UnityLocation = GeoReferencingSystem.ECEFToUnityRoundEarth(EntityStatePdu.EntityLocation, OriginRebasingOffset);
             UnityRotation = GetUnityRotationFromEntityStatePdu(EntityStatePdu, GeoReferencingSystem);
         }
 

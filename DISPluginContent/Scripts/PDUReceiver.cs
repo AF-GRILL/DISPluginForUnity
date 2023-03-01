@@ -106,6 +106,7 @@ namespace GRILLDIS
         public void FailedToConnect(Exception ex)
         {
             OnFailedToConnect.Invoke(ex);
+            Debug.LogError("Error on PDUReceiver: " + ex.Message);
         }
 
         public void stopUDPReceiver()

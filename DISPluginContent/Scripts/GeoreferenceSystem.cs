@@ -39,9 +39,9 @@ namespace GRILLDIS
 {
     public class GeoreferenceSystem : MonoBehaviour
     {
+        const double EPSILON = 2.220446049250313e-16;
         const double EARTH_MAJOR_AXIS = 6378137;
-        const double EARTH_MINOR_AXIS = 6356752.3142;
-        const double EARTH_GEOCENTRIC_RADIUS = 6378137;
+        const double EARTH_MINOR_AXIS = 6356752.314245;
 
         /// <summary>
         /// The Latitude in decimal degrees, Longitude in decimal degrees, and Altitude in meters of the Unity origin (0, 0, 0).
@@ -51,42 +51,75 @@ namespace GRILLDIS
         public FLatLonAlt OriginLLA;
 
         private Vector3Double OriginECEF;
-        private Vector3Double temp;
+        private dmat4 WorldFrameToECEFFrame;
+        private dmat4 ECEFFrameToWorldFrame;
         // Start is called before the first frame update
         void Awake()
         {
             SetupVars();
         }
 
-        #region DebuggingMethods
-
-        IEnumerator LoopCalc()
-        {
-            int i = 0;
-            while (true)
-            {
-
-                Debug.Log("ECEFToUnity " + i + ": " + temp.X + ", " + temp.Y + ", " + temp.Z);
-                Vector3 unityLoc = new Vector3((float)temp.X, (float)temp.Y, (float)temp.Z);
-                temp = UnityFlatearthToECEF(unityLoc);
-                FLatLonAlt tempLLA = Conversions.CalculateLatLonHeightFromEcefXYZ(temp);
-                //Debug.Log("UnityToECEF " + i + ": " + tempLLA.Latitude + ", " + tempLLA.Longitude + ", " + tempLLA.Altitude);
-                temp = ECEFToUnityFlatearth(temp);
-                i += 1;
-                yield return new WaitForSeconds(2.5f);
-            }
-        }
-
-
-        #endregion DebuggingMethods
-
         #region PublicFunctions
 
         /// <summary>
-        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates.
+        /// Converts DIS X, Y, Z coordinates (ECEF) to to Unity coordinates in terms of a round Earth.
+        /// </summary>
+        /// <param name="ECEFLocation">The ECEF location to convert to Unity Round Earth</param>
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        /// <returns>The Unity round Earth coordinates.</returns>
+        public Vector3 ECEFToUnityRoundEarth(Vector3Double ECEFLocation, Vector3 OriginRebasingOffset)
+        {
+            dmat4 ecefLocationToTransform = new dmat4(new dvec4(ECEFLocation.X, 0, 0, 0),
+                new dvec4(ECEFLocation.Y, 0, 0, 0),
+                new dvec4(ECEFLocation.Z, 0, 0, 0),
+                new dvec4(1, 0, 0, 0));
+
+            dmat4 transformedLocation = ecefLocationToTransform * ECEFFrameToWorldFrame;
+            //Convert to Unity coords
+            Vector3 unityCoords = new Vector3
+            {
+                x = (float)transformedLocation.m00,
+                y = (float)transformedLocation.m20,
+                z = (float)transformedLocation.m10
+            };
+
+            Vector3 rebasedUnityLocation = unityCoords - OriginRebasingOffset;
+
+            return rebasedUnityLocation;
+        }
+
+        /// <summary>
+        /// Converts round Earth Unity coordinates into ECEF coordinates.
+        /// </summary>
+        /// <param name="UnityLocation">The Unity coordinates to transform.</param>
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        /// <returns>The ECEF XYZ coordinates.</returns>
+        public Vector3Double UnityRoundEarthToECEF(Vector3 UnityLocation, Vector3 OriginRebasingOffset)
+        {
+            Vector3 rebasedUnityLocation = UnityLocation + OriginRebasingOffset;
+            //Place unity location into double vector and make relative to ECEF coordinate system
+            dmat4 unityLocationToTransform = new dmat4(new dvec4(rebasedUnityLocation.x, 0, 0, 0),
+                new dvec4(rebasedUnityLocation.z, 0, 0, 0),
+                new dvec4(rebasedUnityLocation.y, 0, 0, 0),
+                new dvec4(1, 0, 0, 0));
+
+            dmat4 transformedLocation = unityLocationToTransform * WorldFrameToECEFFrame;
+            Vector3Double ecefCoords = new Vector3Double
+            {
+                X = transformedLocation.m00,
+                Y = transformedLocation.m10,
+                Z = transformedLocation.m20
+            };
+
+            return ecefCoords;
+        }
+
+
+        /// <summary>
+        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a flat Earth.
         /// </summary>
         /// <param name="LatLonAlt">The Lat (X), Lon (Y), Alt (Z) coordinates to transform.</param>
-        /// <returns>The Unity coordinates.</returns>
+        /// <returns>The Unity flat Earth coordinates.</returns>
         public Vector3Double LatLonAltToUnityFlatearth(FLatLonAlt LatLonAlt)
         {
             Vector3Double flatEarthLoc = geodetic_to_flatearth(LatLonAlt);
@@ -103,10 +136,10 @@ namespace GRILLDIS
         }
 
         /// <summary>
-        /// Converts the given ECEF coordinates to Unity coordinates.
+        /// Converts the given ECEF coordinates to Unity coordinates in terms of a flat Earth.
         /// </summary>
         /// <param name="ECEF">The ECEF XYZ coordinates to transform.</param>
-        /// <returns>The Unity coordinates.</returns>
+        /// <returns>The Unity flat Earth  coordinates.</returns>
         public Vector3Double ECEFToUnityFlatearth(Vector3Double ECEF)
         {
             Vector3Double flatEarthLoc = ecef_to_flatearth(ECEF);
@@ -123,7 +156,7 @@ namespace GRILLDIS
         }
 
         /// <summary>
-        /// Converts the given Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+        /// Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates in terms.
         /// </summary>
         /// <param name="UnityCoords">The Unity coordinates to transform.</param>
         /// <returns>The Lat (X), Lon (Y), Alt (Z) coordinates.</returns>
@@ -141,7 +174,7 @@ namespace GRILLDIS
         }
 
         /// <summary>
-        /// Converts the given Unity coordinates into ECEF coordinates.
+        /// Converts the given flat Earth Unity coordinates into ECEF coordinates.
         /// </summary>
         /// <param name="UnityCoords">The Unity coordinates to transform.</param>
         /// <returns>The ECEF XYZ coordinates.</returns>
@@ -193,9 +226,87 @@ namespace GRILLDIS
         private void SetupVars()
         {
             OriginECEF = Conversions.CalculateEcefXYZFromLatLonHeight(OriginLLA);
+
+            WorldFrameToECEFFrame = GetWorldFrameToECEFFrame();
+            ECEFFrameToWorldFrame = WorldFrameToECEFFrame.Inverse;
         }
 
+        private dmat4 GetWorldFrameToECEFFrame()
+        {
+            Vector3Double GeographicEllipsoid = new Vector3Double
+            {
+                X = EARTH_MAJOR_AXIS,
+                Y = EARTH_MAJOR_AXIS,
+                Z = EARTH_MINOR_AXIS
+            };
 
+            // See ECEF standard : https://commons.wikimedia.org/wiki/File:ECEF_ENU_Longitude_Latitude_right-hand-rule.svg
+            if (Math.Abs(OriginECEF.X) < EPSILON &&
+                Math.Abs(OriginECEF.Y) < EPSILON)
+            {
+                // Special Case - On earth axis... 
+                double Sign = 1.0;
+                if (Math.Abs(OriginECEF.Z) < EPSILON)
+                {
+                    // At origin - Should not happen, but consider it's the same as north pole
+                    // Leave Sign = 1
+                }
+                else
+                {
+                    // At South or North pole - Axis are set to be continuous with other points
+                    Sign = (OriginECEF.Z < 0) ? -1 : 1;
+                }
+
+                return new dmat4(
+                    new dvec4(1, 0, 0, OriginECEF.X),           // East = X
+                    new dvec4(0, 0, 1 * Sign, OriginECEF.Y),   // North = Sign * Z
+                    new dvec4(0, -1 * Sign, 0, OriginECEF.Z),    // Up = Sign*Y
+                    new dvec4(0, 0, 0, 1));
+            }
+            else
+            {
+                //Calculate the North, East, Up vectors of the origin and create a transform matrix from them
+                Vector3Double Up = new Vector3Double
+                {
+                    X = OriginECEF.X * (1 / Math.Pow(GeographicEllipsoid.X, 2)),
+                    Y = OriginECEF.Y * (1 / Math.Pow(GeographicEllipsoid.Y, 2)),
+                    Z = OriginECEF.Z * (1 / Math.Pow(GeographicEllipsoid.Z, 2))
+                };
+                double UpMagnitude = Math.Sqrt(Math.Pow(Up.X, 2) + Math.Pow(Up.Y, 2) + Math.Pow(Up.Z, 2));
+                Up = new Vector3Double
+                {
+                    X = Up.X / UpMagnitude,
+                    Y = Up.Y / UpMagnitude,
+                    Z = Up.Z / UpMagnitude
+                };
+
+                Vector3Double East = new Vector3Double
+                {
+                    X = -OriginECEF.Y,
+                    Y = OriginECEF.X,
+                    Z = 0
+                };
+                double EastMagnitude = Math.Sqrt(Math.Pow(East.X, 2) + Math.Pow(East.Y, 2) + Math.Pow(East.Z, 2));
+                East = new Vector3Double
+                {
+                    X = East.X / EastMagnitude,
+                    Y = East.Y / EastMagnitude,
+                    Z = East.Z / EastMagnitude
+                };
+
+                Vector3Double North = new Vector3Double
+                {
+                    X = Up.Y * East.Z - Up.Z * East.Y,
+                    Y = Up.Z * East.X - Up.X * East.Z,
+                    Z = Up.X * East.Y - Up.Y * East.X
+                };
+
+                return new dmat4(new dvec4(East.X, North.X, Up.X, OriginECEF.X),
+                    new dvec4(East.Y, North.Y, Up.Y, OriginECEF.Y),
+                    new dvec4(East.Z, North.Z, Up.Z, OriginECEF.Z),
+                    new dvec4(0, 0, 0, 1));
+            }
+        }
 
         /// <summary>
         /// Transforms the given geodetic Lat, Lon, Alt coordinate to a flat earth coordinate
@@ -213,8 +324,8 @@ namespace GRILLDIS
 
             Vector3Double toReturn = new Vector3Double
             {
-                X = (EARTH_GEOCENTRIC_RADIUS + latlonalt.Altitude) * dlon * Math.Cos(latlonalt.Latitude),
-                Y = (EARTH_GEOCENTRIC_RADIUS + latlonalt.Altitude) * dlat,
+                X = (EARTH_MAJOR_AXIS + latlonalt.Altitude) * dlon * Math.Cos(latlonalt.Latitude),
+                Y = (EARTH_MAJOR_AXIS + latlonalt.Altitude) * dlat,
                 Z = latlonalt.Altitude - OriginLLA.Altitude
             };
 
@@ -229,8 +340,8 @@ namespace GRILLDIS
         private FLatLonAlt flatearth_to_geodetic(Vector3Double FlatEarthCoords)
         {
             //dlat and dlon are in Radians
-            double dlat = FlatEarthCoords.Y / (EARTH_GEOCENTRIC_RADIUS + FlatEarthCoords.Z);
-            double dlon = FlatEarthCoords.X / ((EARTH_GEOCENTRIC_RADIUS + FlatEarthCoords.Z) * Math.Cos(dlat + glm.Radians(OriginLLA.Latitude)));
+            double dlat = FlatEarthCoords.Y / (EARTH_MAJOR_AXIS + FlatEarthCoords.Z);
+            double dlon = FlatEarthCoords.X / ((EARTH_MAJOR_AXIS + FlatEarthCoords.Z) * Math.Cos(dlat + glm.Radians(OriginLLA.Latitude)));
 
             FLatLonAlt toReturn = new FLatLonAlt
             {
@@ -261,8 +372,8 @@ namespace GRILLDIS
 
             Vector3Double toReturn = new Vector3Double
             {
-                X = (EARTH_GEOCENTRIC_RADIUS + lla.Altitude) * dlon * Math.Cos(lla.Latitude),
-                Y = (EARTH_GEOCENTRIC_RADIUS + lla.Altitude) * dlat,
+                X = (EARTH_MAJOR_AXIS + lla.Altitude) * dlon * Math.Cos(lla.Latitude),
+                Y = (EARTH_MAJOR_AXIS + lla.Altitude) * dlat,
                 Z = lla.Altitude - OriginLLA.Altitude
             };
 
@@ -277,8 +388,8 @@ namespace GRILLDIS
         private Vector3Double flatearth_to_ecef(Vector3Double FlatEarthCoords)
         {
             //dlat and dlon are in Radians
-            double dlat = FlatEarthCoords.Y / (EARTH_GEOCENTRIC_RADIUS + FlatEarthCoords.Z);
-            double dlon = FlatEarthCoords.X / ((EARTH_GEOCENTRIC_RADIUS + FlatEarthCoords.Z) * Math.Cos(dlat + glm.Radians(OriginLLA.Latitude)));
+            double dlat = FlatEarthCoords.Y / (EARTH_MAJOR_AXIS + FlatEarthCoords.Z);
+            double dlon = FlatEarthCoords.X / ((EARTH_MAJOR_AXIS + FlatEarthCoords.Z) * Math.Cos(dlat + glm.Radians(OriginLLA.Latitude)));
 
             FLatLonAlt lla = new FLatLonAlt
             {
