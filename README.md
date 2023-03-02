@@ -8,6 +8,7 @@
 - Launch the project and allow Unity to build the newly added files.
 
 # Required Game Objects
+
 - Certain game objects are required to be in a given scene in order for the plugin to work as desired. These are listed below:
 	- _**NOTE:**_ Only one of each unique game object type listed below should be in a single level.
 
@@ -17,23 +18,44 @@
 	- This game object stores the DIS Enumeration to class mappings and other various DIS information.
 	- _**More information about scripts contained on the game object itself can be found in the sections below.**_
 
+# Implemented DIS PDUs
+
+The GRILL DIS for Unity plugin currently supports the below DIS PDUs:
+- Entity State
+- Entity State Update
+- Remove Entity
+- Fire
+- Detonate
+- Start Resume
+- Stop Freeze
+
+If additional PDU support is desired, follow the pattern that is done in the PDUReceiver script's "ProcessDISPacket" function.
+
 # Setting Up an Empty Project
 
 If creating a new project using the GRILL DIS for Unity plugin, the following steps can be performed to set it up with DIS capabilities.
 _**Additional info for all of these topics can be found in their respective sections below.**_
 
+**Receiving DIS**
 1. Place a single DISManager game obect into a scene.
 	- The DISManager comes with the plugin and is located in the "GRILL_DIS/DISPluginContent" folder.
-2. On the DISManager game object, alter the network parameters of the PDUReceiver and PDUSender according to the needs of the project.
-	- These scripts are utilized to handle incoming DIS network packets and to emit DIS network packets respectively.
+2. On the DISManager game object, alter the network parameters of the PDUReceiver according to the needs of the project.
+	- This script is utilized to handle incoming DIS network packets.
 3. Make custom Unity game objects for all DIS entities the project is expected to receive and handle.
 	- Attach a DIS Receive Component script to all of the game objects that are going to be DIS entities and set the parameters in the script accordingly.
 		- This script contains events for handling incoming DIS information.
 4. Create a custom DIS Enumeration Mapping asset that maps DIS entity types to the custom Unity game objects made in step 3.
 5. On the DISManager game object, set the "DIS Enumeration Mapping" variable on its associated DIS Game Manager script to the DIS Enumeration Mapping asset made in step 4.
 6. On the DISManager game object, set the "Origin LLA" variable on its associated Georeference System script to the Latitude, Longitude, and altitude the Unity origin is desired to be at.
-7. **(Optional)** To send DIS, attach a DIS Send Component script to a Unity game object and set the parameters in the script accordingly.
-	- The DIS Send Component script will emit DIS PDUs using the PDUSender script on the DISManager game object.
+
+**Sending DIS**
+1. Place a single DISManager game obect into a scene.
+2. On the DISManager game object, alter the network parameters of the PDUSender according to the needs of the project.
+	- This script is utilized to emit DIS network packets
+3. Make custom Unity game objects for all DIS entities the project needs to emit.
+	- Attach a DIS Send Component script to all of the game objects that are going to be DIS entities and set the parameters in the script accordingly.
+		- The DIS Send Component script will emit DIS PDUs using the PDUSender script on the DISManager game object.
+4. On the DISManager game object, set the "Origin LLA" variable on its associated Georeference System script to the Latitude, Longitude, and altitude the Unity origin is desired to be at.
 
 **General Flow** 
 - The DIS plugin maintains a mapping within the DIS Game Manager script on the DISManager game object that maps DIS Entity IDs to Unity game objects that exist in the current scene.
