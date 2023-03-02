@@ -629,7 +629,26 @@ namespace GRILLDIS
             else if (pduSenderScript != null && EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStateUpdatePDU)
             {
                 //Convert PDUToSend to an Entity State Update PDU
-                pduSenderScript.SendPdu(pduToSend);
+                EntityStateUpdatePdu esupdu = new EntityStateUpdatePdu();
+                {
+                    //pdu common parameters
+                    esupdu.ProtocolVersion = pduToSend.ProtocolVersion;
+                    esupdu.ExerciseID = pduToSend.ExerciseID;
+                    esupdu.ProtocolFamily = pduToSend.ProtocolFamily;
+                    esupdu.Timestamp = pduToSend.Timestamp;
+                    esupdu.Length = pduToSend.Length;
+                    esupdu.Padding = pduToSend.Padding;
+
+                    //Entity State Update common parameters
+                    esupdu.EntityID = pduToSend.EntityID;
+                    esupdu.EntityLocation = pduToSend.EntityLocation;
+                    esupdu.EntityOrientation = pduToSend.EntityOrientation;
+                    esupdu.EntityLinearVelocity = pduToSend.EntityLinearVelocity;
+                    esupdu.EntityAppearance = pduToSend.EntityAppearance;
+                    //esupdu.setArticulationParameters(pduToSend.ArticulationParameters);
+                }
+
+                pduSenderScript.SendPdu(esupdu);
             }
 
             return successful;
