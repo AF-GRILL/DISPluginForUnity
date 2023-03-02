@@ -15,7 +15,35 @@
 
 - The DIS Manager game object is required in the level and is built into the GRILL DIS for Unity plugin.
 	- This game object stores the DIS Enumeration to class mappings and other various DIS information.
-	- More information on the script itself can be found in the **DIS Game Manager section** below.
+	- _**More information about scripts contained on the game object itself can be found in the sections below.**_
+
+# Setting Up an Empty Project
+
+If creating a new project using the GRILL DIS for Unity plugin, the following steps can be performed to set it up with DIS capabilities.
+_**Additional info for all of these topics can be found in their respective sections below.**_
+
+1. Place a single DISManager game obect into a scene.
+	- The DISManager comes with the plugin and is located in the "GRILL_DIS/DISPluginContent" folder.
+2. On the DISManager game object, alter the network parameters of the PDUReceiver and PDUSender according to the needs of the project.
+	- These scripts are utilized to handle incoming DIS network packets and to emit DIS network packets respectively.
+3. Make custom Unity game objects for all DIS entities the project is expected to receive and handle.
+	- Attach a DIS Receive Component script to all of the game objects that are going to be DIS entities and set the parameters in the script accordingly.
+		- This script contains events for handling incoming DIS information.
+4. Create a custom DIS Enumeration Mapping asset that maps DIS entity types to the custom Unity game objects made in step 3.
+5. On the DISManager game object, set the "DIS Enumeration Mapping" variable on its associated DIS Game Manager script to the DIS Enumeration Mapping asset made in step 4.
+6. On the DISManager game object, set the "Origin LLA" variable on its associated Georeference System script to the Latitude, Longitude, and altitude the Unity origin is desired to be at.
+7. **(Optional)** To send DIS, attach a DIS Send Component script to a Unity game object and set the parameters in the script accordingly.
+	- The DIS Send Component script will emit DIS PDUs using the PDUSender script on the DISManager game object.
+
+**General Flow** 
+- The DIS plugin maintains a mapping within the DIS Game Manager script on the DISManager game object that maps DIS Entity IDs to Unity game objects that exist in the current scene.
+- When an EntityStatePDU is received, it gets parsed and info it contains is utilized to check the mapping.
+	- If a match is found:
+		- A game object for the EntityStatePDU already exists in the scene and is notified about the new information.
+	- If a match is not found:
+		- The DISManager looks in the DIS Enumeration Mapping asset on its DIS Game Manager script for what game object should represent this new entity.
+			- If an entity type is found in the DIS Enumeration Mapping asset that matches the entity type contained in the EntityStatePDU, the corresponding game object is spawned.
+			- Otherwise nothing is done.
 
 # PDU Receiver Script
 
@@ -225,6 +253,36 @@ The PDU Sender script has the following settings:
         - The position threshold in meters to use for dead reckoning. If the dead reckoning position deviates more than this value away from the actual position in any axis, a new Entity State PDU will be sent.
     - Dead Reckoning Orientation Threshold Degrees
         - The orientation threshold in degrees to use for dead reckoning. If the dead reckoning orientation deviates more than this value away from the actual orientation, a new Entity State PDU will be sent.
+
+# Georeference System
+
+![GeoreferenceSystem](Resources/ReadMeImages/GeoreferenceSystemScript.png)
+
+- The Georeference System script maps the Unity origin (0, 0, 0) to a specified Latitude, Longitude, and Altitude.
+- This information is utilized to convert:
+	- ECEF and LLA to Unity coordinates.
+	- Unity coordinated to ECEF and LLA.
+- Notable functions:
+	- ECEFToUnityRoundEarth
+		- Converts DIS X, Y, Z coordinates (ECEF) to to Unity coordinates in terms of a round Earth.
+	- UnityRoundEarthToECEF
+		- Converts round Earth Unity coordinates into ECEF coordinates.
+	- LatLonAltToUnityRoundEarth
+		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a round Earth.
+	- UnityRoundEarthToLatLonAlt
+		- Converts round Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+	- LatLonAltToUnityFlatearth
+		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a flat Earth.
+	- UnityFlatearthToLatLonAlt
+		- Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+	- ECEFToUnityFlatearth
+		- Converts the given ECEF coordinates to Unity coordinates in terms of a flat Earth.
+	- UnityFlatearthToECEF
+		- Converts the given flat Earth Unity coordinates into ECEF coordinates.
+	- GetNEDVectorsAtEngineLocation
+		- Get the North, East, Down vectors at the given Unity location.
+	- GetENUVectorsAtEngineLocation
+		- Gets the East, North, Up vectors at the given Unity location.
 
 # DIS Enumeration Mappings
 

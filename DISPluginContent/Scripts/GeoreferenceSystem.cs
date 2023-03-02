@@ -89,6 +89,18 @@ namespace GRILLDIS
         }
 
         /// <summary>
+        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a round Earth.
+        /// </summary>
+        /// <param name="LatLonAlt">The Lat, Lon, Alt coordinates to transform.</param>
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        /// <returns>The Unity round Earth coordinates.</returns>
+        public Vector3 LatLonAltToUnityRoundEarth(FLatLonAlt LatLonAlt, Vector3 OriginRebasingOffset)
+        {
+            Vector3Double ecef = Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt);
+            return ECEFToUnityRoundEarth(ecef, OriginRebasingOffset);
+        }
+
+        /// <summary>
         /// Converts round Earth Unity coordinates into ECEF coordinates.
         /// </summary>
         /// <param name="UnityLocation">The Unity coordinates to transform.</param>
@@ -114,11 +126,22 @@ namespace GRILLDIS
             return ecefCoords;
         }
 
+        /// <summary>
+        /// Converts round Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+        /// </summary>
+        /// <param name="UnityLocation">The Unity coordinates to transform.</param>
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        /// <returns>The Lat, Lon, Alt coordinates.</returns>
+        public FLatLonAlt UnityRoundEarthToLatLonAlt(Vector3 UnityLocation, Vector3 OriginRebasingOffset)
+        {
+            Vector3Double ecef = UnityRoundEarthToECEF(UnityLocation, OriginRebasingOffset);
+            return Conversions.CalculateLatLonHeightFromEcefXYZ(ecef);
+        }
 
         /// <summary>
         /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a flat Earth.
         /// </summary>
-        /// <param name="LatLonAlt">The Lat (X), Lon (Y), Alt (Z) coordinates to transform.</param>
+        /// <param name="LatLonAlt">The Lat, Lon, Alt coordinates to transform.</param>
         /// <returns>The Unity flat Earth coordinates.</returns>
         public Vector3Double LatLonAltToUnityFlatearth(FLatLonAlt LatLonAlt)
         {
@@ -156,10 +179,10 @@ namespace GRILLDIS
         }
 
         /// <summary>
-        /// Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates in terms.
+        /// Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
         /// </summary>
         /// <param name="UnityCoords">The Unity coordinates to transform.</param>
-        /// <returns>The Lat (X), Lon (Y), Alt (Z) coordinates.</returns>
+        /// <returns>The Lat, Lon, Alt coordinates.</returns>
         public FLatLonAlt UnityFlatearthToLatLonAlt(Vector3 UnityCoords)
         {
             //Transform the given Unity coordinates to be in terms of a flat Earth coordinate system
@@ -311,7 +334,7 @@ namespace GRILLDIS
         /// <summary>
         /// Transforms the given geodetic Lat, Lon, Alt coordinate to a flat earth coordinate
         /// </summary>
-        /// <param name="latlonalt">The Lat (X), Lon (Y), Alt (Z) coordinate to transform.</param>
+        /// <param name="latlonalt">The Lat, Lon, Alt coordinate to transform.</param>
         /// <returns>The X (East), Y (North), and Z (Up) location in a flat Earth coordinate system.</returns>
         private Vector3Double geodetic_to_flatearth(FLatLonAlt latlonalt)
         {
@@ -336,7 +359,7 @@ namespace GRILLDIS
         /// Transforms the given flat Earth coordinates to geodetic Lat, Lon, Alt coordinates
         /// </summary>
         /// <param name="FlatEarthCoords">The flat Earth X (East), Y (North), and Z (Up) coordinate to transform.</param>
-        /// <returns>The Lat (X), Lon (Y), Alt (Z) location in a geodetic coordinate system.</returns>
+        /// <returns>The Lat, Lon, Alt location in a geodetic coordinate system.</returns>
         private FLatLonAlt flatearth_to_geodetic(Vector3Double FlatEarthCoords)
         {
             //dlat and dlon are in Radians
