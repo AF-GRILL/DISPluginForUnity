@@ -23,7 +23,7 @@ namespace GRILLDIS
         /// The type of connection used in sending out the PDUs.
         /// </summary>
         [Tooltip("The type of connection used in sending out the PDUs.")]
-        public ConnectionType connectionType;
+        public EConnectionType connectionType;
 
         /// <summary>
         /// The IP Address to send UDP packets on.
@@ -64,7 +64,7 @@ namespace GRILLDIS
                 {
                     #region Unicast
 
-                    case ConnectionType.Unicast:
+                    case EConnectionType.Unicast:
                         IPEndPoint uCastEndPoint = new IPEndPoint(targetIP, port);
                         UdpClient client = new UdpClient();
 
@@ -82,7 +82,7 @@ namespace GRILLDIS
 
                     #region Broadcast
 
-                    case ConnectionType.Broadcast:
+                    case EConnectionType.Broadcast:
                         EndPoint broadcastEP = new IPEndPoint(IPAddress.Broadcast, port);
                         Socket broadcastSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                         broadcastSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, 1);
@@ -101,7 +101,7 @@ namespace GRILLDIS
 
                     #region Multicast
 
-                    case ConnectionType.Multicast:
+                    case EConnectionType.Multicast:
 
                         UdpClient mcastSocket = new UdpClient();
 

@@ -444,8 +444,7 @@ namespace GRILLDIS
                 if (georeferenceScript)
                 {
                     //Get the location the object is supposed to be at according to the most recent dead reckoning update.
-                    Vector3Double mostRecentDRPosition = georeferenceScript.ECEFToUnityFlatearth(MostRecentDeadReckoningPDU.EntityLocation);
-                    entityLocation = new Vector3((float)mostRecentDRPosition.X, (float)mostRecentDRPosition.Y, (float)mostRecentDRPosition.Z);
+                    entityLocation = georeferenceScript.ECEFToUnity(MostRecentDeadReckoningPDU.EntityLocation);
                 }
 
                 Vector3 raycastEndLocation = (clampDirection * 100000) + entityLocation;

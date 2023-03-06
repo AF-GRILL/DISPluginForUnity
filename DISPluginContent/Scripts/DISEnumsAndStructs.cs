@@ -3,7 +3,13 @@ using OpenDis.Dis1998;
 
 namespace GRILLDIS
 {
-    public enum ConnectionType
+    public enum EEarthShape
+    {
+        RoundEarth,
+        FlatEarth
+    }
+
+    public enum EConnectionType
     {
         Unicast,
         Broadcast,

@@ -286,10 +286,10 @@ namespace GRILLDIS
             if (georeferenceScript)
             {
                 //Calculate the position of the entity in ECEF
-                newEntityStatePDU.EntityLocation = georeferenceScript.UnityFlatearthToECEF(transform.position);
+                newEntityStatePDU.EntityLocation = georeferenceScript.UnityToECEF(transform.position);
 
                 //Calculate the orientation of the entity in Psi, Theta, Phi
-                FLatLonAlt lla = georeferenceScript.UnityFlatearthToLatLonAlt(transform.position);
+                FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
 
@@ -366,7 +366,7 @@ namespace GRILLDIS
             if (DeadReckoningLibrary.DeadReckoning(MostRecentEntityStatePDU, DeltaTimeSinceLastPDU, ref MostRecentDeadReckoningPDU))
             {
                 //Get the actual position of the entity
-                Vector3Double ecefLocation = georeferenceScript.UnityFlatearthToECEF(transform.position);
+                Vector3Double ecefLocation = georeferenceScript.UnityToECEF(transform.position);
 
                 //Get the position difference along each axis. Values should be in ECEF.
                 bool xPosOutsideThreshold = Math.Abs(ecefLocation.X - MostRecentDeadReckoningPDU.EntityLocation.X) > DeadReckoningPositionThresholdMeters;
@@ -402,7 +402,7 @@ namespace GRILLDIS
             if (georeferenceScript)
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
-                FLatLonAlt lla = georeferenceScript.UnityFlatearthToLatLonAlt(transform.position);
+                FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
                 // Get the entity's current orientation quaternion
@@ -450,7 +450,7 @@ namespace GRILLDIS
             if (georeferenceScript)
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
-                FLatLonAlt lla = georeferenceScript.UnityFlatearthToLatLonAlt(transform.position);
+                FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
                 // Get the entity's current orientation matrix
@@ -512,8 +512,8 @@ namespace GRILLDIS
                 Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
                 
                 Vector3Double originECEF = georeferenceScript.GetOriginECEF();
-                Vector3Double curLinVelECEF = georeferenceScript.UnityFlatearthToECEF(curUnityLinearVelocity);
-                Vector3Double oldLinVelECEF = georeferenceScript.UnityFlatearthToECEF(LastCalculatedUnityLinearVelocity);
+                Vector3Double curLinVelECEF = georeferenceScript.UnityToECEF(curUnityLinearVelocity);
+                Vector3Double oldLinVelECEF = georeferenceScript.UnityToECEF(LastCalculatedUnityLinearVelocity);
 
                 //Convert linear velocity vectors to be in ECEF coordinates --- UE origin may not be Earth center and may lie rotated on Earth
                 Vector3Double ecefLinearVelocityDouble = new Vector3Double

@@ -47,6 +47,8 @@ namespace GRILLDIS
         /// The Latitude in decimal degrees, Longitude in decimal degrees, and Altitude in meters of the Unity origin (0, 0, 0).
         /// </summary>
         [Header("DIS Georeference Settings")]
+        [Tooltip("The shape of the world in the scene.")]
+        public EEarthShape EarthShape;
         [Tooltip("The Latitude in decimal degrees, Longitude in decimal degrees, and Altitude in meters of the Unity origin (0, 0, 0).")]
         public FLatLonAlt OriginLLA;
 
@@ -62,156 +64,186 @@ namespace GRILLDIS
         #region PublicFunctions
 
         /// <summary>
-        /// Converts DIS X, Y, Z coordinates (ECEF) to to Unity coordinates in terms of a round Earth.
+        /// Converts ECEF coordinates to Unity coordinates.
         /// </summary>
-        /// <param name="ECEFLocation">The ECEF location to convert to Unity Round Earth</param>
+        /// <param name="ECEFLocation">The ECEF location to convert to Unity coordinates</param>
         /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
-        /// <returns>The Unity round Earth coordinates.</returns>
-        public Vector3 ECEFToUnityRoundEarth(Vector3Double ECEFLocation, Vector3 OriginRebasingOffset)
+        /// <returns>The Unity coordinates.</returns>
+        public Vector3 ECEFToUnity(Vector3Double ECEFLocation, Vector3 OriginRebasingOffset = default)
         {
-            dmat4 ecefLocationToTransform = new dmat4(new dvec4(ECEFLocation.X, 0, 0, 0),
-                new dvec4(ECEFLocation.Y, 0, 0, 0),
-                new dvec4(ECEFLocation.Z, 0, 0, 0),
-                new dvec4(1, 0, 0, 0));
+            Vector3 unityCoords = Vector3.zero;
 
-            dmat4 transformedLocation = ecefLocationToTransform * ECEFFrameToWorldFrame;
-            //Convert to Unity coords
-            Vector3 unityCoords = new Vector3
+            switch (EarthShape)
             {
-                x = (float)transformedLocation.m00,
-                y = (float)transformedLocation.m20,
-                z = (float)transformedLocation.m10
-            };
+                case EEarthShape.RoundEarth:
+                    {
+                        dmat4 ecefLocationToTransform = new dmat4(new dvec4(ECEFLocation.X, 0, 0, 0),
+                            new dvec4(ECEFLocation.Y, 0, 0, 0),
+                            new dvec4(ECEFLocation.Z, 0, 0, 0),
+                            new dvec4(1, 0, 0, 0));
 
+                        dmat4 transformedLocation = ecefLocationToTransform * ECEFFrameToWorldFrame;
+                        //Convert to Unity coords
+                        unityCoords = new Vector3
+                        {
+                            x = (float)transformedLocation.m00,
+                            y = (float)transformedLocation.m20,
+                            z = (float)transformedLocation.m10
+                        };
+
+                        break;
+                    }
+                case EEarthShape.FlatEarth:
+                    {
+                        Vector3Double flatEarthLoc = ecef_to_flatearth(ECEFLocation);
+
+                        //Transform the flat Earth ECEF location to be in terms of Unity coordinates
+                        unityCoords = new Vector3
+                        {
+                            x = (float)flatEarthLoc.X,
+                            y = (float)flatEarthLoc.Z,
+                            z = (float)flatEarthLoc.Y
+                        };
+
+                        break;
+                    }
+            }
+
+            // TODO: Find a better way to do origin rebasing rather than passing in a value as it has a cascading effect. Would be nice to be able to get the offset in the function.
+            // Unreal Engine has a built in way of accessing origin offset, but does Unity?...
             Vector3 rebasedUnityLocation = unityCoords - OriginRebasingOffset;
-
             return rebasedUnityLocation;
         }
 
         /// <summary>
-        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a round Earth.
-        /// </summary>
-        /// <param name="LatLonAlt">The Lat, Lon, Alt coordinates to transform.</param>
-        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
-        /// <returns>The Unity round Earth coordinates.</returns>
-        public Vector3 LatLonAltToUnityRoundEarth(FLatLonAlt LatLonAlt, Vector3 OriginRebasingOffset)
-        {
-            Vector3Double ecef = Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt);
-            return ECEFToUnityRoundEarth(ecef, OriginRebasingOffset);
-        }
-
-        /// <summary>
-        /// Converts round Earth Unity coordinates into ECEF coordinates.
+        /// Converts Unity coordinates into ECEF coordinates.
         /// </summary>
         /// <param name="UnityLocation">The Unity coordinates to transform.</param>
         /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
         /// <returns>The ECEF XYZ coordinates.</returns>
-        public Vector3Double UnityRoundEarthToECEF(Vector3 UnityLocation, Vector3 OriginRebasingOffset)
+        public Vector3Double UnityToECEF(Vector3 UnityLocation, Vector3 OriginRebasingOffset = default)
         {
+            Vector3Double ecefCoords = new Vector3Double();
+            // TODO: Find a better way to do origin rebasing rather than passing in a value as it has a cascading effect. Would be nice to be able to get the offset in the function.
+            // Unreal Engine has a built in way of accessing origin offset, but does Unity?...
             Vector3 rebasedUnityLocation = UnityLocation + OriginRebasingOffset;
-            //Place unity location into double vector and make relative to ECEF coordinate system
-            dmat4 unityLocationToTransform = new dmat4(new dvec4(rebasedUnityLocation.x, 0, 0, 0),
-                new dvec4(rebasedUnityLocation.z, 0, 0, 0),
-                new dvec4(rebasedUnityLocation.y, 0, 0, 0),
-                new dvec4(1, 0, 0, 0));
 
-            dmat4 transformedLocation = unityLocationToTransform * WorldFrameToECEFFrame;
-            Vector3Double ecefCoords = new Vector3Double
+            switch (EarthShape)
             {
-                X = transformedLocation.m00,
-                Y = transformedLocation.m10,
-                Z = transformedLocation.m20
-            };
+                case EEarthShape.RoundEarth:
+                    {
+                        //Place unity location into double vector and make relative to ECEF coordinate system
+                        dmat4 unityLocationToTransform = new dmat4(new dvec4(rebasedUnityLocation.x, 0, 0, 0),
+                            new dvec4(rebasedUnityLocation.z, 0, 0, 0),
+                            new dvec4(rebasedUnityLocation.y, 0, 0, 0),
+                            new dvec4(1, 0, 0, 0));
+
+                        dmat4 transformedLocation = unityLocationToTransform * WorldFrameToECEFFrame;
+                        ecefCoords = new Vector3Double
+                        {
+                            X = transformedLocation.m00,
+                            Y = transformedLocation.m10,
+                            Z = transformedLocation.m20
+                        };
+
+                        break;
+                    }
+                case EEarthShape.FlatEarth:
+                    {
+                        //Transform the given Unity coordinates to be in terms of a flat Earth coordinate system
+                        Vector3Double flatEarthCoords = new Vector3Double
+                        {
+                            X = rebasedUnityLocation.x,
+                            Y = rebasedUnityLocation.z,
+                            Z = rebasedUnityLocation.y
+                        };
+
+                        ecefCoords = flatearth_to_ecef(flatEarthCoords);
+                        break;
+                    }
+            }
 
             return ecefCoords;
         }
 
         /// <summary>
-        /// Converts round Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates.
+        /// </summary>
+        /// <param name="LatLonAlt">The Lat, Lon, Alt coordinates to transform.</param>
+        /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
+        /// <returns>The Unity coordinates.</returns>
+        public Vector3 LatLonAltToUnity(FLatLonAlt LatLonAlt, Vector3 OriginRebasingOffset = default)
+        {
+            Vector3 unityCoords = Vector3.zero;
+
+            switch (EarthShape) 
+            {
+                case EEarthShape.RoundEarth:
+                    {
+                        Vector3Double ecef = Conversions.CalculateEcefXYZFromLatLonHeight(LatLonAlt);
+                        unityCoords = ECEFToUnity(ecef, OriginRebasingOffset);
+                        break;
+                    }
+                case EEarthShape.FlatEarth:
+                    {
+                        Vector3Double flatEarthLoc = geodetic_to_flatearth(LatLonAlt);
+
+                        //Transform the flat Earth LLA location to be in terms of Unity coordinates
+                        unityCoords = new Vector3
+                        {
+                            x = (float)flatEarthLoc.X,
+                            y = (float)flatEarthLoc.Z,
+                            z = (float)flatEarthLoc.Y
+                        };
+
+                        // TODO: Find a better way to do origin rebasing rather than passing in a value as it has a cascading effect. Would be nice to be able to get the offset in the function.
+                        // Unreal Engine has a built in way of accessing origin offset, but does Unity?...
+                        unityCoords -= OriginRebasingOffset;
+                        break;
+                    }
+            }
+
+            return unityCoords;
+        }
+
+        /// <summary>
+        /// Converts Unity coordinates into geodetic Lat, Lon, Alt coordinates.
         /// </summary>
         /// <param name="UnityLocation">The Unity coordinates to transform.</param>
         /// <param name="OriginRebasingOffset">The offset that has been applied to the origin if any origin shifting has been performed.</param>
         /// <returns>The Lat, Lon, Alt coordinates.</returns>
-        public FLatLonAlt UnityRoundEarthToLatLonAlt(Vector3 UnityLocation, Vector3 OriginRebasingOffset)
+        public FLatLonAlt UnityToLatLonAlt(Vector3 UnityLocation, Vector3 OriginRebasingOffset = default)
         {
-            Vector3Double ecef = UnityRoundEarthToECEF(UnityLocation, OriginRebasingOffset);
-            return Conversions.CalculateLatLonHeightFromEcefXYZ(ecef);
-        }
+            FLatLonAlt llaCoords = new FLatLonAlt();
 
-        /// <summary>
-        /// Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a flat Earth.
-        /// </summary>
-        /// <param name="LatLonAlt">The Lat, Lon, Alt coordinates to transform.</param>
-        /// <returns>The Unity flat Earth coordinates.</returns>
-        public Vector3Double LatLonAltToUnityFlatearth(FLatLonAlt LatLonAlt)
-        {
-            Vector3Double flatEarthLoc = geodetic_to_flatearth(LatLonAlt);
-
-            //Transform the flat Earth LLA location to be in terms of Unity coordinates
-            Vector3Double unityLoc = new Vector3Double
+            switch (EarthShape)
             {
-                X = flatEarthLoc.X,
-                Y = flatEarthLoc.Z,
-                Z = flatEarthLoc.Y
-            };
+                case EEarthShape.RoundEarth:
+                    {
+                        Vector3Double ecef = UnityToECEF(UnityLocation, OriginRebasingOffset);
+                        llaCoords = Conversions.CalculateLatLonHeightFromEcefXYZ(ecef);
+                        break;
+                    }
+                case EEarthShape.FlatEarth:
+                    {
+                        // TODO: Find a better way to do origin rebasing rather than passing in a value as it has a cascading effect. Would be nice to be able to get the offset in the function.
+                        // Unreal Engine has a built in way of accessing origin offset, but does Unity?...
+                        UnityLocation += OriginRebasingOffset;
 
-            return unityLoc;
-        }
+                        //Transform the given Unity coordinates to be in terms of a flat Earth coordinate system
+                        Vector3Double flatEarthCoords = new Vector3Double
+                        {
+                            X = UnityLocation.x,
+                            Y = UnityLocation.z,
+                            Z = UnityLocation.y
+                        };
 
-        /// <summary>
-        /// Converts the given ECEF coordinates to Unity coordinates in terms of a flat Earth.
-        /// </summary>
-        /// <param name="ECEF">The ECEF XYZ coordinates to transform.</param>
-        /// <returns>The Unity flat Earth  coordinates.</returns>
-        public Vector3Double ECEFToUnityFlatearth(Vector3Double ECEF)
-        {
-            Vector3Double flatEarthLoc = ecef_to_flatearth(ECEF);
+                        llaCoords = flatearth_to_geodetic(flatEarthCoords);
+                        break;
+                    }
+            }
 
-            //Transform the flat Earth ECEF location to be in terms of Unity coordinates
-            Vector3Double unityLoc = new Vector3Double
-            {
-                X = flatEarthLoc.X,
-                Y = flatEarthLoc.Z,
-                Z = flatEarthLoc.Y
-            };
-
-            return unityLoc;
-        }
-
-        /// <summary>
-        /// Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
-        /// </summary>
-        /// <param name="UnityCoords">The Unity coordinates to transform.</param>
-        /// <returns>The Lat, Lon, Alt coordinates.</returns>
-        public FLatLonAlt UnityFlatearthToLatLonAlt(Vector3 UnityCoords)
-        {
-            //Transform the given Unity coordinates to be in terms of a flat Earth coordinate system
-            Vector3Double flatEarthCoords = new Vector3Double
-            {
-                X = UnityCoords.x,
-                Y = UnityCoords.z,
-                Z = UnityCoords.y
-            };
-
-            return flatearth_to_geodetic(flatEarthCoords);
-        }
-
-        /// <summary>
-        /// Converts the given flat Earth Unity coordinates into ECEF coordinates.
-        /// </summary>
-        /// <param name="UnityCoords">The Unity coordinates to transform.</param>
-        /// <returns>The ECEF XYZ coordinates.</returns>
-        public Vector3Double UnityFlatearthToECEF(Vector3 UnityCoords)
-        {
-            //Transform the given Unity coordinates to be in terms of a flat Earth coordinate system
-            Vector3Double flatEarthCoords = new Vector3Double
-            {
-                X = UnityCoords.x,
-                Y = UnityCoords.z,
-                Z = UnityCoords.y
-            };
-
-            return flatearth_to_ecef(flatEarthCoords);
+            return llaCoords;
         }
 
         /// <summary>
@@ -219,9 +251,9 @@ namespace GRILLDIS
         /// </summary>
         /// <param name="UnityLocation">The Unity location to get the North, East, Down vectors of.</param>
         /// <returns>The North, East, Down vectors.</returns>
-        public FNorthEastDown GetNEDVectorsAtEngineLocation(Vector3 UnityLocation)
+        public FNorthEastDown GetNEDVectorsAtEngineLocation(Vector3 UnityLocation, Vector3 OriginRebasingOffset = default)
         {
-            Vector3Double ecefLoc = UnityFlatearthToECEF(UnityLocation);
+            Vector3Double ecefLoc = UnityToECEF(UnityLocation, OriginRebasingOffset);
             FLatLonAlt lla = Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLoc);
             return Conversions.CalculateNorthEastDownVectorsFromLatLon(lla.Latitude, lla.Longitude);
         }
@@ -231,9 +263,9 @@ namespace GRILLDIS
         /// </summary>
         /// <param name="UnityLocation">The Unity location to get the East, North, Up vectors of.</param>
         /// <returns>The East, North, Up vectors.</returns>
-        public FEastNorthUp GetENUVectorsAtEngineLocation(Vector3 UnityLocation)
+        public FEastNorthUp GetENUVectorsAtEngineLocation(Vector3 UnityLocation, Vector3 OriginRebasingOffset = default)
         {
-            Vector3Double ecefLoc = UnityFlatearthToECEF(UnityLocation);
+            Vector3Double ecefLoc = UnityToECEF(UnityLocation, OriginRebasingOffset);
             FLatLonAlt lla = Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLoc);
             FNorthEastDown northEastDownVectors = Conversions.CalculateNorthEastDownVectorsFromLatLon(lla.Latitude, lla.Longitude);
             return new FEastNorthUp(northEastDownVectors.EastVector, northEastDownVectors.NorthVector, -northEastDownVectors.DownVector);

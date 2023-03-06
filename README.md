@@ -283,24 +283,21 @@ The PDU Sender script has the following settings:
 - The Georeference System script maps the Unity origin (0, 0, 0) to a specified Latitude, Longitude, and Altitude.
 - This information is utilized to convert:
 	- ECEF and LLA to Unity coordinates.
-	- Unity coordinated to ECEF and LLA.
+	- Unity coordinates to ECEF and LLA.
+- Has variables for:
+	- Earth Shape
+		- Whether the shape of the world in the project is to be a Round Earth or Flat Earth representation.
+		- Origin LLA
+			- The Latitude in decimal degrees, Longitude in decimal degrees, and Altitude in meters that the Unity Origin represents.
 - Notable functions:
-	- ECEFToUnityRoundEarth
-		- Converts DIS X, Y, Z coordinates (ECEF) to to Unity coordinates in terms of a round Earth.
-	- UnityRoundEarthToECEF
-		- Converts round Earth Unity coordinates into ECEF coordinates.
-	- LatLonAltToUnityRoundEarth
-		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a round Earth.
-	- UnityRoundEarthToLatLonAlt
-		- Converts round Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
-	- LatLonAltToUnityFlatearth
-		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates in terms of a flat Earth.
-	- UnityFlatearthToLatLonAlt
-		- Converts the given flat Earth Unity coordinates into geodetic Lat, Lon, Alt coordinates.
-	- ECEFToUnityFlatearth
-		- Converts the given ECEF coordinates to Unity coordinates in terms of a flat Earth.
-	- UnityFlatearthToECEF
-		- Converts the given flat Earth Unity coordinates into ECEF coordinates.
+	- ECEFToUnity
+		- Converts ECEF coordinates to Unity coordinates.
+	- UnityToECEF
+		- Converts Unity coordinates into ECEF coordinates.
+	- LatLonAltToUnity
+		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates.
+	- UnityToLatLonAlt
+		- Converts Unity coordinates into geodetic Lat, Lon, Alt coordinates.
 	- GetNEDVectorsAtEngineLocation
 		- Get the North, East, Down vectors at the given Unity location.
 	- GetENUVectorsAtEngineLocation

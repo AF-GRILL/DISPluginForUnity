@@ -20,7 +20,7 @@ namespace GRILLDIS
             EditorGUILayout.PropertyField(serializedObject.FindProperty("autoConnectAtStart"), new GUIContent("Auto-Connect", "Whether or not to auto connect the send address on start."));
 
             //Draw IP Address if relavent
-            EditorGUI.BeginDisabledGroup(sender.connectionType == ConnectionType.Broadcast);
+            EditorGUI.BeginDisabledGroup(sender.connectionType == EConnectionType.Broadcast);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("ipAddressString"), new GUIContent("IP Address", "The IP Address to send UDP packets on."));
             EditorGUI.EndDisabledGroup();
 
