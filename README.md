@@ -298,10 +298,16 @@ The PDU Sender script has the following settings:
 		- Converts the given Lat, Lon, Alt coordinates to Unity coordinates.
 	- UnityToLatLonAlt
 		- Converts Unity coordinates into geodetic Lat, Lon, Alt coordinates.
+	- LatLonAltToProjected
+		- Converts the given Lat and Lon to UTM coordinates.
 	- GetNEDVectorsAtEngineLocation
 		- Get the North, East, Down vectors at the given Unity location.
+	- GetNEDVectorsAtECEFLocation
+		- Get the North, East, Down vectors at the given ECEF location.
 	- GetENUVectorsAtEngineLocation
 		- Gets the East, North, Up vectors at the given Unity location.
+	- GetENUVectorsAtECEFLocation
+		- Gets the East, North, Up vectors at the given ECEF location.
 
 # DIS Enumeration Mappings
 

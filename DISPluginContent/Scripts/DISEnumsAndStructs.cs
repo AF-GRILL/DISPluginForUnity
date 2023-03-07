@@ -189,4 +189,18 @@ namespace GRILLDIS
             Altitude = lla.Z;
         }
     };
+
+    public struct FUTMCoordinates
+    {
+        public double Easting;
+        public double Northing;
+        public string Zone;
+
+        public FUTMCoordinates(double UTMEasting, double UTMNorthing, string UTMZone)
+        {
+            Easting = UTMEasting;
+            Northing = UTMNorthing;
+            Zone = UTMZone;
+        }
+    }
 }

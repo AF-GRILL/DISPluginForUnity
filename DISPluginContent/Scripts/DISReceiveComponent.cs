@@ -434,18 +434,17 @@ namespace GRILLDIS
             //Verify that ground clamping is enabled, the entity is owned by another sim, is of the ground domain, and that it is not a munition
             if (SpawnedFromNetwork && (PerformGroundClamping == EGroundClampingMode.AlwaysGroundClamp || (PerformGroundClamping == EGroundClampingMode.GroundClampWithDISOptions && CurrentEntityType.domain == 1 && CurrentEntityType.entityKind != 2)))
             {
-                FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(MostRecentDeadReckoningPDU.EntityLocation);
-
-                FNorthEastDown northEastDownVectors = Conversions.CalculateNorthEastDownVectorsFromLatLon(llh.Latitude, llh.Longitude);
-
-                Vector3 clampDirection = northEastDownVectors.DownVector;
+                FEastNorthUp eastNorthUpVectors = new FEastNorthUp(Vector3.right, Vector3.forward, Vector3.up);
 
                 Vector3 entityLocation = gameObject.transform.position;
                 if (georeferenceScript)
                 {
                     //Get the location the object is supposed to be at according to the most recent dead reckoning update.
                     entityLocation = georeferenceScript.ECEFToUnity(MostRecentDeadReckoningPDU.EntityLocation);
+                    eastNorthUpVectors = georeferenceScript.GetENUVectorsAtECEFLocation(MostRecentDeadReckoningPDU.EntityLocation);
                 }
+
+                Vector3 clampDirection = -eastNorthUpVectors.UpVector;
 
                 Vector3 raycastEndLocation = (clampDirection * 100000) + entityLocation;
                 Vector3 raycastStartLocation = (clampDirection * -100000) + entityLocation;
