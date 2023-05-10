@@ -17,14 +17,9 @@ namespace GRILLDIS
         private readonly MessageDelegate _pduDelegate;
         private readonly ConcurrentQueue<Pdu> _pduMessageQueue = new ConcurrentQueue<Pdu>();
 
-        private OpenDis.Core.PduProcessor openDISpduProcessor;
-
         public PDUProcessor(MessageDelegate pduDelegate)
         {
             _pduDelegate = pduDelegate;
-
-            openDISpduProcessor = new OpenDis.Core.PduProcessor();
-            openDISpduProcessor.Endian = Endian.Big;
         }
 
         public void OnUDPPacketReceived(byte[] receivedBytes, UDPReceiverMulti.UDPReceiverMulti udpReceiverMulti)

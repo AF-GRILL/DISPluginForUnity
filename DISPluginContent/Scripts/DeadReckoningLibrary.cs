@@ -331,7 +331,7 @@ namespace GRILLDIS
         /// <summary>
         /// Converts a Quaternion into an OpenDIS Orientation (Psi, Theta, Phi).
         /// </summary>
-        /// <param name="entityPDUToDeadReckon">The Entity PDU being dead reckoned</param>
+        /// <param name="AngularVelocity">The Entity PDU being dead reckoned</param>
         /// <param name="localQuaternion">The Quaternion to convert into an Orientation (Psi, Theta, Phi).</param>
         /// <param name="deltaTime">The time increment for dead reckoning calculation</param>
         /// <returns>The OpenDIS Orientation.</returns>

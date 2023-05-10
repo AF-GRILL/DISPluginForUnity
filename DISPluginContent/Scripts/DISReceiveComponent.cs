@@ -8,15 +8,6 @@ using GlmSharp;
 
 namespace GRILLDIS
 {
-    [Serializable] public class DeadReckoningUpdate : UnityEvent<EntityStatePdu> { }
-    [Serializable] public class EntityStatePDUProcessed : UnityEvent<EntityStatePdu> { }
-    [Serializable] public class EntityStateUpdatePDUProcessed : UnityEvent<EntityStateUpdatePdu> { }
-    [Serializable] public class FirePDUProcessed : UnityEvent<FirePdu> { }
-    [Serializable] public class DetonationPDUProcessed : UnityEvent<DetonationPdu> { }
-    [Serializable] public class RemoveEntityPDUProcessed : UnityEvent<RemoveEntityPdu> { }
-    [Serializable] public class StopFreezePDUProcessed : UnityEvent<StopFreezePdu> { }
-    [Serializable] public class StartResumePDUProcessed : UnityEvent<StartResumePdu> { }
-
     public class DISReceiveComponent : MonoBehaviour
     {
         /// <summary>
@@ -66,35 +57,35 @@ namespace GRILLDIS
         /// Called after a dead reckoning update is performed by the component. Passes out an Entity State PDU with updated dead reckoning variables as a parameter.
         /// </summary>
         [Space(20)]
-        public DeadReckoningUpdate OnDeadReckoningUpdate = new DeadReckoningUpdate();
+        public UnityEvent<EntityStatePdu> OnDeadReckoningUpdate;
         /// <summary>
         /// Called after an Entity State PDU is processed by the component. The component updates associated variables prior to broadcasting this event. Passes the Entity State PDU that was received as a parameter.
         /// </summary>
-        public EntityStatePDUProcessed OnEntityStatePDUProcessed = new EntityStatePDUProcessed();
+        public UnityEvent<EntityStatePdu> OnEntityStatePDUProcessed;
         /// <summary>
         /// Called after an Entity State Update PDU is processed by the component. The component updates associated variables prior to broadcasting this event. Passes the Entity State Update PDU that was received as a parameter.
         /// </summary>
-        public EntityStateUpdatePDUProcessed OnEntityStateUpdatePDUProcessed = new EntityStateUpdatePDUProcessed();
+        public UnityEvent<EntityStateUpdatePdu> OnEntityStateUpdatePDUProcessed;
         /// <summary>
         /// Called after a Fire PDU is processed by the component. Passes the Fire PDU that was received as a parameter.
         /// </summary>
-        public FirePDUProcessed OnFirePDUProcessed = new FirePDUProcessed();
+        public UnityEvent<FirePdu> OnFirePDUProcessed;
         /// <summary>
         /// Called after a Detonation PDU is processed by the component. Passes the Detonation PDU that was received as a parameter.
         /// </summary>
-        public DetonationPDUProcessed OnDetonationPDUProcessed = new DetonationPDUProcessed();
+        public UnityEvent<DetonationPdu> OnDetonationPDUProcessed;
         /// <summary>
         /// Called after a Remove Entity PDU is processed by the component. Passes the Remove Entity PDU that was received as a parameter.
         /// </summary>
-        public RemoveEntityPDUProcessed OnRemoveEntityPDUProcessed = new RemoveEntityPDUProcessed();
+        public UnityEvent<RemoveEntityPdu> OnRemoveEntityPDUProcessed;
         /// <summary>
         /// Called after a Stop/Freeze PDU is processed by the component. Passes the Stop / Freeze PDU that was received as a parameter.
         /// </summary>
-        public StopFreezePDUProcessed OnStopFreezePDUProcessed = new StopFreezePDUProcessed();
+        public UnityEvent<StopFreezePdu> OnStopFreezePDUProcessed;
         /// <summary>
         /// Called after a Start/Resume PDU is processed by the component. Passes the Start / Resume PDU that was received as a parameter.
         /// </summary>
-        public StartResumePDUProcessed OnStartResumePDUProcessed = new StartResumePDUProcessed();
+        public UnityEvent<StartResumePdu> OnStartResumePDUProcessed;
 
         /// <summary>
         /// The Entity Type of the associated entity. Specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.

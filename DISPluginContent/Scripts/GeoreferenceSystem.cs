@@ -57,7 +57,7 @@ namespace GRILLDIS
         private Vector3Double OriginECEF;
         private dmat4 WorldFrameToECEFFrame;
         private dmat4 ECEFFrameToWorldFrame;
-        private dmat4 UEFrameToWorldFrame;
+        private dmat4 UnityFrameToWorldFrame;
         private dmat4 WorldFrameToUnityFrame;
         private Vector3Double GeographicEllipsoid = new Vector3Double
         {
@@ -395,12 +395,12 @@ namespace GRILLDIS
             {
                 case EEarthShape.RoundEarth:
                     {
-                        dmat4 UEToECEF = WorldFrameToECEFFrameAtLocation * ECEFFrameToWorldFrame * UEFrameToWorldFrame;
+                        dmat4 UnityToECEF = WorldFrameToECEFFrameAtLocation * ECEFFrameToWorldFrame * UnityFrameToWorldFrame;
 
                         //Put in terms of Unity coordinate system
-                        dvec4 East = UEToECEF.Column0;
-                        dvec4 North = UEToECEF.Column2;
-                        dvec4 Up = UEToECEF.Column1;
+                        dvec4 East = UnityToECEF.Column0;
+                        dvec4 North = UnityToECEF.Column2;
+                        dvec4 Up = UnityToECEF.Column1;
 
                         ENU.EastVector = new Vector3((float)East.x, (float)East.y, (float)East.z);
                         ENU.NorthVector = new Vector3((float)North.x, (float)North.y, (float)North.z);
@@ -516,7 +516,7 @@ namespace GRILLDIS
                 -dvec4.UnitY,    // Northing (Y) is Unity World -X because of left-handed convention
                 dvec4.UnitZ,     // Up (Z) is Unity World Y
                 dvec4.UnitW);    // No Origin offset
-            UEFrameToWorldFrame = WorldFrameToUnityFrame.Inverse;
+            UnityFrameToWorldFrame = WorldFrameToUnityFrame.Inverse;
         }
 
         /// <summary>

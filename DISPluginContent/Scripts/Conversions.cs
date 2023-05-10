@@ -466,22 +466,15 @@ namespace GRILLDIS
         /// <param name="HeadingPitchRollDegrees">The Heading, Pitch, Roll rotation in degrees to get the Unity rotation from.</param>
         /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
         /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
         /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-        public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+        public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double LatitudeDegrees, double LongitudeDegrees)
         {
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return Vector3.zero;
-            }
-
             FHeadingPitchRoll headingPitchRollRadians;
             headingPitchRollRadians.Heading = glm.Radians(HeadingPitchRollDegrees.Heading);
             headingPitchRollRadians.Pitch = glm.Radians(HeadingPitchRollDegrees.Pitch);
             headingPitchRollRadians.Roll = glm.Radians(HeadingPitchRollDegrees.Roll);
 
-            return GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(headingPitchRollRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+            return GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(headingPitchRollRadians, LatitudeDegrees, LongitudeDegrees);
         }
 
         /// <summary>
@@ -490,19 +483,12 @@ namespace GRILLDIS
         /// <param name="HeadingPitchRollRadians">The Heading, Pitch, Roll rotation in radians to get the Unity rotation from.</param>
         /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
         /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
         /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-        public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+        public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double LatitudeDegrees, double LongitudeDegrees)
         {
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return Vector3.zero;
-            }
-
             FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(HeadingPitchRollRadians, LatitudeDegrees, LongitudeDegrees);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
         }
 
         /// <summary>
@@ -511,22 +497,15 @@ namespace GRILLDIS
         /// <param name="PsiThetaPhiDegrees">The Psi, Theta, Phi rotation in degrees to get the Unity rotation from.</param>
         /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
         /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
         /// <return>The Unity rotation of the given Psi, Theta, Phi rotation</return>
         public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
         {
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return Vector3.zero;
-            }
-
             FPsiThetaPhi psiThetaPhiRadians;
             psiThetaPhiRadians.Psi = glm.Radians(PsiThetaPhiDegrees.Psi);
             psiThetaPhiRadians.Theta = glm.Radians(PsiThetaPhiDegrees.Theta);
             psiThetaPhiRadians.Phi = glm.Radians(PsiThetaPhiDegrees.Phi);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees, GeoReferencingSystem);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
         }
 
         /// <summary>
@@ -535,34 +514,17 @@ namespace GRILLDIS
         /// <param name="PsiThetaPhiRadians">The Psi, Theta, Phi rotation in radians to get the Unity rotation from.</param>
         /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
         /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing script reference.</param>
         /// <returns>The Unity rotation of the given Psi, Theta, Phi rotation</returns>
-        public static Vector3 GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi PsiThetaPhiRadians, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+        public static Vector3 GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi PsiThetaPhiRadians, double LatitudeDegrees, double LongitudeDegrees)
         {
             Vector3 unityRotation = Vector3.zero;
-
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return unityRotation;
-            }
-
-            FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(LatitudeDegrees, LongitudeDegrees);
-
-            //Get NED of the world origin
-            FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
-
-            // Get the rotational difference between calculated NED and Unity origin NED
-            float XAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.EastVector, originNorthEastDown.EastVector);
-            float YAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.DownVector, originNorthEastDown.DownVector);
-            float ZAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.NorthVector, originNorthEastDown.NorthVector);
 
             FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
 
             //Unity Roll and Pitch axes are backwards from DIS. Invert as needed
-            unityRotation.z = -HeadingPitchRollDegrees.Roll + XAxisRotationAngle;
-            unityRotation.x = -HeadingPitchRollDegrees.Pitch + YAxisRotationAngle;
-            unityRotation.y = HeadingPitchRollDegrees.Heading + ZAxisRotationAngle;
+            unityRotation.z = -HeadingPitchRollDegrees.Roll;
+            unityRotation.x = -HeadingPitchRollDegrees.Pitch;
+            unityRotation.y = HeadingPitchRollDegrees.Heading;
 
             return unityRotation;
         }
@@ -571,21 +533,14 @@ namespace GRILLDIS
         /// Gets Unity rotation from a DIS entity state PDU
         /// </summary>
         /// <param name="EntityStatePduIn">The DIS PDU indicating the current state of the DIS entity</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
         /// <returns>The rotation of the entity in Unity</returns>
-        public static Vector3 GetUnityRotationFromEntityStatePdu(EntityStatePdu EntityStatePduIn, GeoreferenceSystem GeoReferencingSystem)
+        public static Vector3 GetUnityRotationFromEntityStatePdu(EntityStatePdu EntityStatePduIn)
         {
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return Vector3.zero;
-            }
-
             FPsiThetaPhi PsiThetaPhiRadians = new FPsiThetaPhi(EntityStatePduIn.EntityOrientation);
 
             FLatLonAlt lla = CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.Latitude, lla.Longitude, GeoReferencingSystem);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.Latitude, lla.Longitude);
         }
 
         /// <summary>
@@ -607,40 +562,22 @@ namespace GRILLDIS
             }
 
             UnityLocation = GeoReferencingSystem.ECEFToUnity(EntityStatePdu.EntityLocation, OriginRebasingOffset);
-            UnityRotation = GetUnityRotationFromEntityStatePdu(EntityStatePdu, GeoReferencingSystem);
+            UnityRotation = GetUnityRotationFromEntityStatePdu(EntityStatePdu);
         }
 
         /// <summary>
         /// Gets the Heading, Pitch, and Roll in degrees of the given Unity rotation at the given Unity location
         /// </summary>
         /// <param name="UnityRotation">The Unity rotation in world space</param>
-        /// <param name="UnityLocation">The Unity location in world space</param>
-        /// <param name="GeoReferencingSystem">The GeoReferencing Subsystem reference.</param>
         /// <returns>The heading from North, pitch, and roll in degrees</returns>
-        public static FHeadingPitchRoll GetHeadingPitchRollFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem)
+        public static FHeadingPitchRoll GetHeadingPitchRollFromUnityRotation(Vector3 UnityRotation)
         {
             FHeadingPitchRoll headingPitchRoll = new FHeadingPitchRoll();
 
-            if (GeoReferencingSystem == null)
-            {
-                Debug.LogError("Invalid GeoReference was passed to get Unity location from. Returning Unity location of (0, 0, 0).");
-                return headingPitchRoll;
-            }
-
-            FNorthEastDown NorthEastDownVectors = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(UnityLocation);
-
-            //Get NED of the world origin
-            FNorthEastDown OriginNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
-
-            // Get the rotational difference between calculated NED and Unity origin NED
-            float XAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.EastVector, OriginNorthEastDown.EastVector);
-            float YAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.DownVector, OriginNorthEastDown.DownVector);
-            float ZAxisRotationAngle = Vector3.Angle(NorthEastDownVectors.NorthVector, OriginNorthEastDown.NorthVector);
-
             //Unity Roll and Pitch axes are backwards from DIS. Invert as needed
-            headingPitchRoll.Roll = -UnityRotation.z - XAxisRotationAngle;
-            headingPitchRoll.Pitch = -UnityRotation.x - YAxisRotationAngle;
-            headingPitchRoll.Heading = UnityRotation.y - ZAxisRotationAngle;
+            headingPitchRoll.Roll = -UnityRotation.z;
+            headingPitchRoll.Pitch = -UnityRotation.x;
+            headingPitchRoll.Heading = UnityRotation.y;
 
             return headingPitchRoll;
         }
@@ -654,7 +591,7 @@ namespace GRILLDIS
         /// <returns>The Psi (Yaw), Theta (Pitch), and Phi (Roll) in degrees</returns>
         public static FPsiThetaPhi GetPsiThetaPhiDegreesFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem, Vector3 OriginRebasingOffset = default)
         {
-            FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
+            FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation);
             FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation, OriginRebasingOffset);
 
             return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
@@ -669,7 +606,7 @@ namespace GRILLDIS
         /// <returns>The Psi (Yaw), Theta (Pitch), and Phi (Roll) in radians</returns>
         public static FPsiThetaPhi GetPsiThetaPhiRadiansFromUnityRotation(Vector3 UnityRotation, Vector3 UnityLocation, GeoreferenceSystem GeoReferencingSystem, Vector3 OriginRebasingOffset = default)
         {
-            FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation, UnityLocation, GeoReferencingSystem);
+            FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation);
             FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation, OriginRebasingOffset);
 
             return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);

@@ -46,7 +46,6 @@ namespace GRILLDIS
         [Header("")]
         public UnityEvent<GameObject, EntityStatePdu> e_CreateDISEntity;
         public UnityEvent<GameObject, EDestroyCode> e_DestroyDISEntity;
-        public UnityEvent<EntityStatePdu> e_NoDISEntity;
 
         private Dictionary<UInt64, GameObject> entityIDDictionary;
         private Dictionary<UInt64, GameObject> entityTypeDictionary;

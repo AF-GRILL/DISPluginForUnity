@@ -123,15 +123,6 @@ namespace GRILLDIS.UDPReceiverMulti
             }
         }
 
-        private byte[] getLatestBytes()
-        {
-            if (udpPacketList.Count > 0)
-            {
-                return udpPacketList[udpPacketList.Count - 1];
-            }
-            return new byte[0];
-        }
-
         private void asyncReceive(IAsyncResult result)
         {
 
@@ -164,36 +155,12 @@ namespace GRILLDIS.UDPReceiverMulti
             }
         }
 
-        static void Main(string[] args)
-        {
-            Console.WriteLine("Starting receiver");
-            //IPAddress ipAddress = IPAddress.Parse("10.0.1.134");
-            IPAddress ipAddress = IPAddress.Any;
-            int port = 3000;
-
-            UDPReceiverMulti receiver = new UDPReceiverMulti(ipAddress, port, IPAddress.Parse("224.252.0.1"), false, true);
-            receiver.beginReceiving();
-            Thread.Sleep(5000);
-            receiver.stopReceiving();
-            Thread.Sleep(5000);
-            receiver.beginReceiving();
-            Console.ReadKey();
-            //broadcastPort = 3000;  //3000 is default for DisMapper / VBS
-
-            // Start a multicast or broadcast.
-            //StartMulticast();  // Mulicast only
-            //StartBroadcast(); //Works with DisMapper and EspduSender when they are set to 'Broadcast'           
-
-            // Process Incomming messages.
-            //ReceiveBroadcastMessages();
-        }
-
         public void registerPDUProcessor(PDUProcessorInterface pduProcessor)
         {
             pduProcessors.Add(pduProcessor);
         }
 
-        public void unregisterPDUProcess(PDUProcessorInterface pduProcessor)
+        public void unregisterPDUProcessor(PDUProcessorInterface pduProcessor)
         {
             pduProcessors.Remove(pduProcessor);
         }

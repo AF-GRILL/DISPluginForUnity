@@ -290,7 +290,7 @@ namespace GRILLDIS
 
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
 
                 newEntityStatePDU.EntityOrientation = new Orientation
@@ -403,7 +403,7 @@ namespace GRILLDIS
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
                 // Get the entity's current orientation quaternion
                 actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
@@ -451,7 +451,7 @@ namespace GRILLDIS
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
                 // Get the entity's current orientation matrix
 
@@ -611,8 +611,8 @@ namespace GRILLDIS
                 rotationAngle = glm.Radians(rotationAngle);
 
                 angularVelocity = (rotationAngle * rotationAxis) / timeSinceLastCalc;
-                //Swap axes as needed
-                angularVelocity = new Vector3(angularVelocity.z, angularVelocity.x, angularVelocity.y);
+                //Swap axes as needed. Unity Roll and Pitch axes are backwards from DIS. Invert as needed
+                angularVelocity = new Vector3(-angularVelocity.z, -angularVelocity.x, angularVelocity.y);
             }
 
             return angularVelocity;
