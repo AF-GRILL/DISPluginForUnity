@@ -498,7 +498,7 @@ namespace GRILLDIS
         /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
         /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
         /// <return>The Unity rotation of the given Psi, Theta, Phi rotation</return>
-        public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, double LatitudeDegrees, double LongitudeDegrees, GeoreferenceSystem GeoReferencingSystem)
+        public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, double LatitudeDegrees, double LongitudeDegrees)
         {
             FPsiThetaPhi psiThetaPhiRadians;
             psiThetaPhiRadians.Psi = glm.Radians(PsiThetaPhiDegrees.Psi);
