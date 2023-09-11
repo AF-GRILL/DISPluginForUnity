@@ -95,6 +95,14 @@ namespace GRILLDIS
         UnityDestroy
     }
 
+    public enum EEntityDamage
+    {
+        NoDamage,
+        SlightDamage,
+        ModerateDamage,
+        Destroyed
+    };
+
     public struct FEastNorthUp
     {
         public Vector3 EastVector;
@@ -202,5 +210,78 @@ namespace GRILLDIS
             Northing = UTMNorthing;
             Zone = UTMZone;
         }
+    }
+
+    public struct FEntityAppearance
+    {
+
+        public bool PaintScheme;
+        public bool MobilityKilled;
+        public bool FirePowerKilled;
+        public EEntityDamage Damage;
+        public bool IsSmoking;
+        public bool IsEngineSmoking;
+        public int Trailing;
+        public int HatchState;
+        public bool LightPrimary;
+        public bool LightSecondary;
+        public bool LightCollision;
+        public bool IsFlaming;
+        public bool IsFrozen;
+        public bool IsDeactivated;
+        public bool IsLandingGearExtended;
+        public int RawVal;
+
+        public FEntityAppearance(int val)
+        {
+            RawVal = val;
+            PaintScheme = getField(val, 0);
+            MobilityKilled = getField(val, 1);
+            FirePowerKilled = getField(val, 2);
+            Damage = (EEntityDamage)getField(val, 0b11, 3);
+            IsSmoking = getField(val, 5);
+            IsEngineSmoking = getField(val, 6);
+            Trailing = getField(val, 0b11, 7);
+            HatchState = getField(val, 0b111, 9);
+            LightPrimary = getField(val, 12);
+            LightSecondary = getField(val, 13);
+            LightCollision = getField(val, 14);
+            IsFlaming = getField(val, 15);
+
+            IsFrozen = getField(val, 21);
+            IsDeactivated = getField(val, 23);
+
+            IsLandingGearExtended = getField(val, 25);
+        }
+
+        static int getField(int val, int mask, int pos)
+        {
+            return (int)((val & (mask << pos)) >> pos);
+        }
+        static bool getField(int val, int pos)
+        {
+            return getField(val, 0b1, pos) != 0;
+        }
+
+        int UpdateValue()
+        {
+            RawVal |= PaintScheme ? 1 << 0 : 0 << 0;
+            RawVal |= MobilityKilled ? 1 << 1 : 0 << 1;
+            RawVal |= FirePowerKilled ? 1 << 2 : 0 << 2;
+            RawVal |= (int)Damage << 3;
+            RawVal |= IsSmoking ? 1 << 5 : 0 << 5;
+            RawVal |= IsEngineSmoking ? 1 << 6 : 0 << 6;
+            RawVal |= Trailing << 7;
+            RawVal |= HatchState << 9;
+            RawVal |= LightPrimary ? 1 << 12 : 0 << 12;
+            RawVal |= LightSecondary ? 1 << 13 : 0 << 13;
+            RawVal |= LightCollision ? 1 << 14 : 0 << 14;
+            RawVal |= IsFlaming ? 1 << 15 : 0 << 15;
+            RawVal |= IsFrozen ? 1 << 21 : 0 << 21;
+            RawVal |= IsDeactivated ? 1 << 23 : 0 << 23;
+            RawVal |= IsLandingGearExtended ? 1 << 25 : 0 << 25;
+            return RawVal;
+        }
+
     }
 }

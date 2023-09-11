@@ -215,6 +215,22 @@ namespace GRILLDIS
                         }
                     }
                 }
+                else if(PDUPacketToProcess is ElectronicEmissionsPdu)
+                {
+                    ElectronicEmissionsPdu electronicEmisionsPdu = (ElectronicEmissionsPdu)PDUPacketToProcess;
+                    //Verify that we are the appropriate sim to handle the ElectromagneticEmissionsPDUIn
+                    if (electronicEmisionsPdu.ExerciseID == disManagerScript.ExerciseID)
+                    {
+                        //Get associated OpenDISComponent and relay information
+                        DISReceiveComponent DISComponent = disManagerScript.GetAssociatedDISReceiveComponent(electronicEmisionsPdu.EmittingEntityID);
+
+                        if (DISComponent != null)
+                        {
+                            DISComponent.HandleElectronicEmissionsPDU(electronicEmisionsPdu);
+                        }
+                    }
+
+                }
             }
         }
     }

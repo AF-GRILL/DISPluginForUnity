@@ -52,6 +52,11 @@ namespace GRILLDIS
         /// </summary>
         [Tooltip("The collision channel to use for ground clamping.")]
         public LayerMask GroundClampingCollisionLayer = 1;
+        /// <summary>
+        /// To automatically apply entity states to the owner actor.
+        /// </summary>
+        [Tooltip("To automatically apply entity states to the owner actor.")]
+        public bool ApplyToOwner = false;
 
         /// <summary>
         /// Called after a dead reckoning update is performed by the component. Passes out an Entity State PDU with updated dead reckoning variables as a parameter.
@@ -86,6 +91,10 @@ namespace GRILLDIS
         /// Called after a Start/Resume PDU is processed by the component. Passes the Start / Resume PDU that was received as a parameter.
         /// </summary>
         public UnityEvent<StartResumePdu> OnStartResumePDUProcessed;
+        /// <summary>
+        /// Called after an Electronic Emissions PDU is processed by the component. Passes the Electronic Emissions PDU that was received as a parameter.
+        /// </summary>
+        public UnityEvent<ElectronicEmissionsPdu> OnElectronicEmissionsPDUProcessed;
 
         /// <summary>
         /// The Entity Type of the associated entity. Specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
@@ -205,8 +214,13 @@ namespace GRILLDIS
 
             if (!PerformDeadReckoning)
             {
-                GroundClamping();
+                //If ground clamping not enabled, check if we should apply to owner
+                if (!GroundClamping() && ApplyToOwner)
+                {
+                    ApplyToOwnerIfActivated(MostRecentDeadReckoningPDU);
+                }
             }
+
         }
 
         /// <summary>
@@ -247,8 +261,13 @@ namespace GRILLDIS
 
             if (!PerformDeadReckoning)
             {
-                GroundClamping();
+                //If ground clamping not enabled, check if we should apply to owner
+                if (!GroundClamping() && ApplyToOwner)
+                {
+                    ApplyToOwnerIfActivated(MostRecentDeadReckoningPDU);
+                }
             }
+
         }
 
         /// <summary>
@@ -327,6 +346,11 @@ namespace GRILLDIS
             OnStartResumePDUProcessed.Invoke(NewStartResumePDU);
         }
 
+        public void HandleElectronicEmissionsPDU(ElectronicEmissionsPdu NewElectronicEmissionsPDU)
+        {
+            OnElectronicEmissionsPDUProcessed.Invoke(NewElectronicEmissionsPDU);
+        }
+
         void DoDeadReckoning(float DeltaTime)
         {
             DeltaTimeSinceLastPDU += DeltaTime;
@@ -363,8 +387,12 @@ namespace GRILLDIS
                     OnDeadReckoningUpdate.Invoke(MostRecentDeadReckoningPDU);
                 }
 
-                //Perform ground clamping last
-                GroundClamping();
+                //Perform ground clamping last -- If ground clamping not enabled, check if we should apply to owner
+                if (!GroundClamping() && ApplyToOwner)
+                {
+                    ApplyToOwnerIfActivated(MostRecentDeadReckoningPDU);
+                }
+
             }
         }
 
@@ -411,6 +439,18 @@ namespace GRILLDIS
             return Mathf.Lerp(OutRangeA, OutRangeB, valuePercentInStartRange);
         }
 
+        void ApplyToOwnerIfActivated(EntityStatePdu StatePDU)
+        {
+            if (!ApplyToOwner || !georeferenceScript)
+            {
+                return;
+            }
+
+            Conversions.GetUnityLocationAndOrientationFromEntityStatePdu(StatePDU, georeferenceScript, out Vector3 unityLoc, out Vector3 unityRot);
+            transform.position = unityLoc;
+            transform.rotation = Quaternion.Euler(unityRot);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         ///////////////////    Begin Overridable Functions    //////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -420,7 +460,7 @@ namespace GRILLDIS
         /// <summary>
         /// Clamps an entity to the ground.
         /// </summary>
-        public virtual void GroundClamping()
+        public virtual bool GroundClamping()
         {
             //Verify that ground clamping is enabled, the entity is owned by another sim, is of the ground domain, and that it is not a munition
             if (SpawnedFromNetwork && (PerformGroundClamping == EGroundClampingMode.AlwaysGroundClamp || (PerformGroundClamping == EGroundClampingMode.GroundClampWithDISOptions && CurrentEntityType.domain == 1 && CurrentEntityType.entityKind != 2)))
@@ -452,6 +492,12 @@ namespace GRILLDIS
                     transform.position = clampLocation;
                     transform.rotation = clampRotation;
                 }
+
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
