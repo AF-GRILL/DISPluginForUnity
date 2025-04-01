@@ -132,7 +132,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3424637735621093189, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: port
-      value: 5014
+      value: 3000
+      objectReference: {fileID: 0}
+    - target: {fileID: 3424637735621093189, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
+      propertyPath: multicastTtl
+      value: 255
+      objectReference: {fileID: 0}
+    - target: {fileID: 3424637735621093189, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
+      propertyPath: connectionType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3424637735621093189, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: autoConnectAtStart
@@ -204,7 +212,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3740386622288005759, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: port
-      value: 5014
+      value: 3000
       objectReference: {fileID: 0}
     - target: {fileID: 3740386622288005759, guid: 682b51ffd4bb1cc42834650ed8a590e3, type: 3}
       propertyPath: useMulticast
@@ -449,15 +457,11 @@ MonoBehaviour:
     subcategory: 2
     specific: 0
     extra: 0
-  CurrentEntityID:
-    site: 6
-    application: 7
-    entity: 8
+  CurrentEntityID: 0
   EntityForceID: 1
   EntityMarking: GRILL Unity
   DISHeartbeatSeconds: 5
   EntityStatePDUSendingMode: 1
-  EntityStateCalculationRate: 0.1
   EntityAppearance: 0
   EntityCapabilities: 0
   DeadReckoningAlgorithm: 4

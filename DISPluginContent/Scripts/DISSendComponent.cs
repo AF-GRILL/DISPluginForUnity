@@ -275,7 +275,7 @@ namespace GRILLDIS
 
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
 
                 newEntityStatePDU.EntityOrientation = new Orientation
@@ -400,7 +400,7 @@ namespace GRILLDIS
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
                 // Get the entity's current orientation quaternion
                 actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
@@ -448,7 +448,7 @@ namespace GRILLDIS
             {
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
-                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
+                FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles, transform.position, georeferenceScript);
                 FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
                 // Get the entity's current orientation matrix
 
