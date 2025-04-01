@@ -29,6 +29,11 @@ namespace GRILLDIS
             if (sender.port < 1024) { sender.port = 1024; }
             if (sender.port > 65535) { sender.port = 65535; }
 
+            //Draw Multicast Time to Live if relavent
+            EditorGUI.BeginDisabledGroup(sender.connectionType != EConnectionType.Multicast);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("multicastTtl"), new GUIContent("Multicast TTL", "Time to Live for emitted packets if multicast is used."));
+            EditorGUI.EndDisabledGroup();
+
             //Draw Max Queue Size
             EditorGUILayout.PropertyField(serializedObject.FindProperty("maxQueueSize"), new GUIContent("Max Queue Size", "The maximum number of queued PDUs before the most recent ones get removed."));
 

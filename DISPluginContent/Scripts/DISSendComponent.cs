@@ -23,8 +23,8 @@ namespace GRILLDIS
         /// <summary>
         /// The Entity ID of the associated entity.Each Entity ID should be unique to an entity in the sim.
         /// </summary>
-        [Tooltip("The Entity ID of the associated entity. Each Entity ID should be unique to an entity in the sim.")]
-        public EntityIDEditor CurrentEntityID;
+        [Tooltip("The Entity ID of the associated entity. Each Entity ID should be unique to an entity in the sim. The Site ID and Application ID will be retrieved from the DISGameManager")]
+        public ushort CurrentEntityID;
         /// <summary>
         /// The Force ID of the associated entity.Specifies the team or side the DIS entity is on.
         /// </summary>
@@ -48,13 +48,6 @@ namespace GRILLDIS
         /// </summary>
         [Tooltip("The sending mode that this entity should use for Entity State PDUs.")]
         public EEntityStateSendingMode EntityStatePDUSendingMode = EEntityStateSendingMode.None;
-        /// <summary>
-        /// The rate at which the timer that calculates the current linear velocity, linear acceleration, and angular acceleration of the entity gets executed.
-        /// The values calculated by this timer get utilized when forming an Entity State PDU.
-        /// </summary>
-        [Min(0.01f)]
-        [Tooltip("The rate at which the timer that calculates the current linear velocity, linear acceleration, and angular acceleration of the entity gets executed. The values calculated by this timer get utilized when forming an Entity State PDU.")]
-        public float EntityStateCalculationRate = 0.1f;
         /// <summary>
         /// The dead reckoning algorithm to use.Specifies the dynamic changes to the entities appearance attributes.
         /// </summary>
@@ -100,7 +93,7 @@ namespace GRILLDIS
 
         private float DeltaTimeSinceLastPDU = 0;
 
-        private float TimeOfLastParametersCalculation;
+        private float DeltaTimeSinceLastCalculationUpdate;
         private Vector3 LastCalculatedUnityLocation;
         private Quaternion LastCalculatedUnityRotation;
         private Vector3 LastCalculatedUnityLinearVelocity;
@@ -119,8 +112,6 @@ namespace GRILLDIS
             //Setup Previous/Current Location and Rotation variables.
             LastCalculatedUnityLocation = transform.position;
             LastCalculatedUnityRotation = transform.rotation;
-
-            TimeOfLastParametersCalculation = Time.realtimeSinceStartup;
 
             //If the DIS Game Manager was not set, attempt to find it
             if (DISGameManager == null)
@@ -153,35 +144,15 @@ namespace GRILLDIS
                 pduSenderScript = DISGameManager.GetComponent<PDUSender>();
                 pduSenderScript.SendPdu(MostRecentEntityStatePDU);
             }
-
-            InvokeRepeating("UpdateEntityStateCalculations", EntityStateCalculationRate, EntityStateCalculationRate);
-        }
-
-        void UpdateEntityStateCalculations()
-        {
-            float deltaTime = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
-
-            //Update previous velocity, rotation, and location regardless of if an Entity State PDU was sent out.		
-            LastCalculatedAngularVelocity = CalculateAngularVelocity();
-
-            CalculateECEFLinearVelocityAndAcceleration(out LastCalculatedECEFLinearVelocity, out LastCalculatedECEFLinearAcceleration);
-            CalculateBodyLinearVelocityAndAcceleration(LastCalculatedAngularVelocity, out LastCalculatedBodyLinearVelocity, out LastCalculatedBodyLinearAcceleration);
-
-            if (deltaTime > 0)
-            {
-                LastCalculatedUnityLinearVelocity = (transform.position - LastCalculatedUnityLocation) / deltaTime;
-            }
-
-            LastCalculatedUnityLocation = transform.position;
-            LastCalculatedUnityRotation = transform.rotation;
-
-            TimeOfLastParametersCalculation = Time.realtimeSinceStartup;
         }
 
         // Called every frame
         void Update()
         {
             DeltaTimeSinceLastPDU += Time.deltaTime;
+            DeltaTimeSinceLastCalculationUpdate += Time.deltaTime;
+
+            UpdateEntityStateCalculations();
 
             if (EntityStatePDUSendingMode != EEntityStateSendingMode.None)
             {
@@ -194,7 +165,14 @@ namespace GRILLDIS
             //Emit a final EntityStatePDU detailing that the entity has been deactivated
             EntityStatePdu finalESPDU = new EntityStatePdu();
 
-            finalESPDU.EntityID = CurrentEntityID.toEntityID();
+            EntityID entityID = new EntityID
+            {
+                Site = (ushort)disGameManagerScript.SiteID,
+                Application = (ushort)disGameManagerScript.ApplicationID,
+                Entity = CurrentEntityID
+            };
+
+            finalESPDU.EntityID = entityID;
             finalESPDU.EntityType = CurrentEntityType.toEntityType();
             finalESPDU.ForceId = (byte)EntityForceID;
             finalESPDU.Marking = PDUUtil.getStringAsMarking(EntityMarking);
@@ -264,7 +242,14 @@ namespace GRILLDIS
         {
             EntityStatePdu newEntityStatePDU = new EntityStatePdu();
 
-            newEntityStatePDU.EntityID = CurrentEntityID.toEntityID();
+            EntityID entityID = new EntityID
+            {
+                Site = (ushort)disGameManagerScript.SiteID,
+                Application = (ushort)disGameManagerScript.ApplicationID,
+                Entity = CurrentEntityID
+            };
+
+            newEntityStatePDU.EntityID = entityID;
             newEntityStatePDU.EntityType = CurrentEntityType.toEntityType();
             newEntityStatePDU.ForceId = (byte)EntityForceID;
             newEntityStatePDU.Marking = PDUUtil.getStringAsMarking(EntityMarking);
@@ -291,7 +276,7 @@ namespace GRILLDIS
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
-                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
+                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
 
                 newEntityStatePDU.EntityOrientation = new Orientation
                 {
@@ -359,28 +344,33 @@ namespace GRILLDIS
             return newEntityStatePDU;
         }
 
-        public bool CheckDeadReckoningThreshold()
+        public bool CheckDeadReckoningThresholds()
         {
             bool outsideThreshold = false;
 
             if (DeadReckoningLibrary.DeadReckoning(MostRecentEntityStatePDU, DeltaTimeSinceLastPDU, ref MostRecentDeadReckoningPDU))
             {
-                //Get the actual position of the entity
-                Vector3Double ecefLocation = georeferenceScript.UnityToECEF(transform.position);
-
-                //Get the position difference along each axis. Values should be in ECEF.
-                bool xPosOutsideThreshold = Math.Abs(ecefLocation.X - MostRecentDeadReckoningPDU.EntityLocation.X) > DeadReckoningPositionThresholdMeters;
-                bool yPosOutsideThreshold = Math.Abs(ecefLocation.Y - MostRecentDeadReckoningPDU.EntityLocation.Y) > DeadReckoningPositionThresholdMeters;
-                bool zPosOutsideThreshold = Math.Abs(ecefLocation.Z - MostRecentDeadReckoningPDU.EntityLocation.Z) > DeadReckoningPositionThresholdMeters;
-
                 //Check if the position difference is beyond the position threshold in any axis
-                if (xPosOutsideThreshold || yPosOutsideThreshold || zPosOutsideThreshold || CheckOrientationQuaternionThreshold())
+                if (CheckEcefPositionThreshold() || CheckOrientationQuaternionThreshold())
                 {
                     outsideThreshold = true;
                 }
             }
 
             return outsideThreshold;
+        }
+
+        public bool CheckEcefPositionThreshold()
+        {
+            //Get the actual position of the entity
+            Vector3Double ecefLocation = georeferenceScript.UnityToECEF(transform.position);
+
+            //Get the position difference along each axis. Values should be in ECEF.
+            bool xPosOutsideThreshold = Math.Abs(ecefLocation.X - MostRecentDeadReckoningPDU.EntityLocation.X) > DeadReckoningPositionThresholdMeters;
+            bool yPosOutsideThreshold = Math.Abs(ecefLocation.Y - MostRecentDeadReckoningPDU.EntityLocation.Y) > DeadReckoningPositionThresholdMeters;
+            bool zPosOutsideThreshold = Math.Abs(ecefLocation.Z - MostRecentDeadReckoningPDU.EntityLocation.Z) > DeadReckoningPositionThresholdMeters;
+
+            return xPosOutsideThreshold || yPosOutsideThreshold || zPosOutsideThreshold;
         }
 
         public bool CheckOrientationQuaternionThreshold()
@@ -397,6 +387,13 @@ namespace GRILLDIS
             //Calculate the new orientation quaternion
             Quaternion DR_OrientationQuaternion = entityOrientationQuaternion * deadReckoningQuaternion;
 
+            //If negative, flip it
+            if (DR_OrientationQuaternion.w < 0)
+            {
+                DR_OrientationQuaternion = Quaternion.Inverse(DR_OrientationQuaternion);
+                DR_OrientationQuaternion.w *= -1;
+            }
+
             Quaternion actualOrientationQuaternion = new Quaternion();
 
             if (georeferenceScript)
@@ -404,7 +401,7 @@ namespace GRILLDIS
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
-                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
+                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
                 // Get the entity's current orientation quaternion
                 actualOrientationQuaternion = DeadReckoningLibrary.GetEntityOrientationQuaternion(psiThetaPhiRadians.Psi, psiThetaPhiRadians.Theta, psiThetaPhiRadians.Phi);
             }
@@ -452,7 +449,7 @@ namespace GRILLDIS
                 //Calculate the orientation of the entity in Psi, Theta, Phi
                 FLatLonAlt lla = georeferenceScript.UnityToLatLonAlt(transform.position);
                 FHeadingPitchRoll headingPitchRollDegrees = Conversions.GetHeadingPitchRollFromUnityRotation(transform.eulerAngles);
-                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
+                FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
                 // Get the entity's current orientation matrix
 
                 Orientation entityOrientation = new Orientation
@@ -487,7 +484,7 @@ namespace GRILLDIS
             bool sentUpdate = false;
 
             //Verify a new Entity State or Entity State Update PDU should be sent
-            if ((EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStatePDU || EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStateUpdatePDU) && (DeltaTimeSinceLastPDU > DISHeartbeatSeconds || CheckDeadReckoningThreshold()))
+            if ((EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStatePDU || EntityStatePDUSendingMode == EEntityStateSendingMode.EntityStateUpdatePDU) && (DeltaTimeSinceLastPDU > DISHeartbeatSeconds || CheckDeadReckoningThresholds()))
             {
                 MostRecentEntityStatePDU = FormEntityStatePDU();
                 MostRecentDeadReckoningPDU = MostRecentEntityStatePDU;
@@ -501,15 +498,32 @@ namespace GRILLDIS
             return sentUpdate;
         }
 
+        void UpdateEntityStateCalculations()
+        {
+            if (DeltaTimeSinceLastCalculationUpdate > 0)
+            {
+                //Update previous velocity, rotation, and location regardless of if an Entity State PDU was sent out.		
+                LastCalculatedAngularVelocity = CalculateAngularVelocity();
+
+                CalculateECEFLinearVelocityAndAcceleration(out LastCalculatedECEFLinearVelocity, out LastCalculatedECEFLinearAcceleration);
+                CalculateBodyLinearVelocityAndAcceleration(LastCalculatedAngularVelocity, out LastCalculatedBodyLinearVelocity, out LastCalculatedBodyLinearAcceleration);
+
+                LastCalculatedUnityLinearVelocity = (transform.position - LastCalculatedUnityLocation) / DeltaTimeSinceLastCalculationUpdate;
+
+                LastCalculatedUnityLocation = transform.position;
+                LastCalculatedUnityRotation = transform.rotation;
+
+                DeltaTimeSinceLastCalculationUpdate = 0;
+            }
+        }
+
         public void CalculateECEFLinearVelocityAndAcceleration(out Vector3 ECEFLinearVelocity, out Vector3 ECEFLinearAcceleration)
         {
-            float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
-
             //If delta time is greater than zero, calculate new values. Otherwise use previous calculations
-            if (timeSinceLastCalc > 0)
+            if (DeltaTimeSinceLastCalculationUpdate > 0)
             {
                 Vector3 curLoc = transform.position;
-                Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
+                Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / DeltaTimeSinceLastCalculationUpdate;
                 
                 Vector3Double originECEF = georeferenceScript.GetOriginECEF();
                 Vector3Double curLinVelECEF = georeferenceScript.UnityToECEF(curUnityLinearVelocity);
@@ -533,9 +547,9 @@ namespace GRILLDIS
 
                 ECEFLinearAcceleration = new Vector3
                 {
-                    x = (float)(ECEFLinearVelocity.x - prevECEFLinearVelocity.X) / timeSinceLastCalc,
-                    y = (float)(ECEFLinearVelocity.y - prevECEFLinearVelocity.Y) / timeSinceLastCalc,
-                    z = (float)(ECEFLinearVelocity.z - prevECEFLinearVelocity.Z) / timeSinceLastCalc
+                    x = (float)(ECEFLinearVelocity.x - prevECEFLinearVelocity.X) / DeltaTimeSinceLastCalculationUpdate,
+                    y = (float)(ECEFLinearVelocity.y - prevECEFLinearVelocity.Y) / DeltaTimeSinceLastCalculationUpdate,
+                    z = (float)(ECEFLinearVelocity.z - prevECEFLinearVelocity.Z) / DeltaTimeSinceLastCalculationUpdate
                 };
             }
             else
@@ -548,18 +562,16 @@ namespace GRILLDIS
 
         public void CalculateBodyLinearVelocityAndAcceleration(Vector3 AngularVelocity, out Vector3 BodyLinearVelocity, out Vector3 BodyLinearAcceleration)
         {
-            float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
-
             //If delta time greater than zero, calculate new values. Otherwise use previous calculations
-            if (timeSinceLastCalc > 0)
+            if (DeltaTimeSinceLastCalculationUpdate > 0)
             {
                 Vector3 curLoc = transform.position;
-                Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / timeSinceLastCalc;
+                Vector3 curUnityLinearVelocity = (curLoc - LastCalculatedUnityLocation) / DeltaTimeSinceLastCalculationUpdate;
 
                 //Convert linear velocity vectors to be in body space --- Use inverse UE rotations to convert vectors into appropriate DIS body space
                 BodyLinearVelocity = Vector3.Scale(transform.rotation * curUnityLinearVelocity, new Vector3(1, 1, -1));
                 Vector3 prevVelBodySpace = Vector3.Scale(LastCalculatedUnityRotation * LastCalculatedUnityLinearVelocity, new Vector3(1, 1, -1));
-                BodyLinearAcceleration = (BodyLinearVelocity - prevVelBodySpace) / timeSinceLastCalc;
+                BodyLinearAcceleration = (BodyLinearVelocity - prevVelBodySpace) / DeltaTimeSinceLastCalculationUpdate;
 
                 //Calculate the centripetal acceleration in body space
                 dvec3 dvecAngularVelocity = new dvec3(AngularVelocity.x, AngularVelocity.y, AngularVelocity.z);
@@ -585,9 +597,8 @@ namespace GRILLDIS
         public Vector3 CalculateAngularVelocity()
         {
             Vector3 angularVelocity = LastCalculatedAngularVelocity;
-            float timeSinceLastCalc = Time.realtimeSinceStartup - TimeOfLastParametersCalculation;
 
-            if (timeSinceLastCalc > 0)
+            if (DeltaTimeSinceLastCalculationUpdate > 0)
             {
                 //Convert the rotators to quaternions
                 Quaternion oldQuat = LastCalculatedUnityRotation;
@@ -610,7 +621,7 @@ namespace GRILLDIS
                 rotDiff.ToAngleAxis(out rotationAngle, out rotationAxis);
                 rotationAngle = glm.Radians(rotationAngle);
 
-                angularVelocity = (rotationAngle * rotationAxis) / timeSinceLastCalc;
+                angularVelocity = (rotationAngle * rotationAxis) / DeltaTimeSinceLastCalculationUpdate;
                 //Swap axes as needed. Unity Roll and Pitch axes are backwards from DIS. Invert as needed
                 angularVelocity = new Vector3(-angularVelocity.z, -angularVelocity.x, angularVelocity.y);
             }

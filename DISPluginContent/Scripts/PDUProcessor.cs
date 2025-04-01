@@ -28,9 +28,16 @@ namespace GRILLDIS
             uint pduTypePosition = OpenDis.Core.PduProcessor.PDU_TYPE_POSITION;
             byte pduType = receivedBytes[pduTypePosition];
             //List<object> pduList = openDISpduProcessor.ProcessPdu(receivedBytes, Endian.Big);
-            OpenDis.Dis1998.Pdu pdu = OpenDis.Core.PduProcessor.UnmarshalRawPdu(pduType, receivedBytes, Endian.Big);
+            try
+            {
+                OpenDis.Dis1998.Pdu pdu = OpenDis.Core.PduProcessor.UnmarshalRawPdu(pduType, receivedBytes, Endian.Big);
 
-            _pduMessageQueue.Enqueue(pdu);
+                _pduMessageQueue.Enqueue(pdu);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error occurred while unmarshalling received PDU: " + ex.Message);
+            }
         }
 
         public void CheckForUpdate()

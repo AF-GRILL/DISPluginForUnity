@@ -47,6 +47,11 @@ namespace GRILLDIS
         public UnityEvent<GameObject, EntityStatePdu> e_CreateDISEntity;
         public UnityEvent<GameObject, EDestroyCode> e_DestroyDISEntity;
 
+        /// <summary>
+        /// Called after a Detonation PDU with NO_SPECIFIC_ENTITY as its Munition ID is received. Passes the Detonation PDU as a parameter.
+        /// </summary>
+        public UnityEvent<DetonationPdu> OnNoSpecificEntityDetonationPDUReceived;
+
         private Dictionary<UInt64, GameObject> entityIDDictionary;
         private Dictionary<UInt64, GameObject> entityTypeDictionary;
         private GeoreferenceSystem georeferenceScript;

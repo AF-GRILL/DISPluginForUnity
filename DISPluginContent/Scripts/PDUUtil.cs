@@ -18,6 +18,14 @@ namespace GRILLDIS
             return entityIDU64;
         }
 
+        public static bool CheckEntityIDsEqual(EntityID left, EntityID right)
+        {
+            return left.Site == right.Site
+            && left.Application == right.Application
+            && left.Entity == right.Entity;
+
+        }
+
         public static UInt64 ThreeUShortsToUInt64(ushort low, ushort mid, ushort high)
         {
             return ((UInt64)mid << 16) | ((UInt64)high << 32) | (UInt64)low;

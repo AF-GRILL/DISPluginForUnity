@@ -38,6 +38,12 @@ namespace GRILLDIS
         public int port = 5001;
 
         /// <summary>
+        /// Time to Live for emitted packets if multicast is used.
+        /// </summary>
+        [HideInInspector]
+        public short multicastTtl = 255;
+
+        /// <summary>
         /// Whether or not to auto connect the send address on start.
         /// </summary>
         [HideInInspector]
@@ -105,6 +111,7 @@ namespace GRILLDIS
 
                         UdpClient mcastSocket = new UdpClient();
 
+                        mcastSocket.Ttl = multicastTtl;
                         mcastSocket.JoinMulticastGroup(targetIP, LocalIPAddress());
 
                         IPEndPoint mcastEP = new IPEndPoint(targetIP, port);

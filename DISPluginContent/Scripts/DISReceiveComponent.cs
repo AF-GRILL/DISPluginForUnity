@@ -95,6 +95,14 @@ namespace GRILLDIS
         /// Called after an Electronic Emissions PDU is processed by the component. Passes the Electronic Emissions PDU that was received as a parameter.
         /// </summary>
         public UnityEvent<ElectronicEmissionsPdu> OnElectronicEmissionsPDUProcessed;
+        /// <summary>
+        /// Called after an Signal PDU is processed by the component. Passes the Signal PDU that was received as a parameter.
+        /// </summary>
+        public UnityEvent<SignalPdu> OnSignalPDUProcessed;
+        /// <summary>
+        /// Called after an Designator PDU is processed by the component. Passes the Designator PDU that was received as a parameter.
+        /// </summary>
+        public UnityEvent<DesignatorPdu> OnDesignatorPDUProcessed;
 
         /// <summary>
         /// The Entity Type of the associated entity. Specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
@@ -350,6 +358,17 @@ namespace GRILLDIS
         {
             OnElectronicEmissionsPDUProcessed.Invoke(NewElectronicEmissionsPDU);
         }
+
+        public void HandleSignalPDU(SignalPdu NewSignalPDUIn)
+        {
+            OnSignalPDUProcessed.Invoke(NewSignalPDUIn);
+        }
+
+        public void HandleDesignatorPDU(DesignatorPdu NewDesignatorPDUIn)
+        {
+            OnDesignatorPDUProcessed.Invoke(NewDesignatorPDUIn);
+        }
+
 
         void DoDeadReckoning(float DeltaTime)
         {

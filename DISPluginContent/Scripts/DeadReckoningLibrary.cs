@@ -29,9 +29,9 @@ namespace GRILLDIS
                         if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                         {
                             //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out FLatLonAlt llh);
 
-                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
+                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh);
                             DeadReckonedPdu.EntityOrientation = new Orientation
                             {
                                 Psi = psiThetaPhiRadians.Psi,
@@ -61,9 +61,9 @@ namespace GRILLDIS
                         if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                         {
                             //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out FLatLonAlt llh);
 
-                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
+                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh);
                             DeadReckonedPdu.EntityOrientation = new Orientation
                             {
                                 Psi = psiThetaPhiRadians.Psi,
@@ -163,9 +163,9 @@ namespace GRILLDIS
                         if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                         {
                             //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out FLatLonAlt llh);
 
-                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
+                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh);
                             DeadReckonedPdu.EntityOrientation = new Orientation
                             {
                                 Psi = psiThetaPhiRadians.Psi,
@@ -181,11 +181,9 @@ namespace GRILLDIS
                         // Form GLM vectors for position, velocity, and acceleration
                         dvec3 PositionVector = new dvec3(EntityPduToDeadReckon.EntityLocation.X, EntityPduToDeadReckon.EntityLocation.Y, EntityPduToDeadReckon.EntityLocation.Z);
                         dvec3 VelocityVector = new dvec3(EntityPduToDeadReckon.EntityLinearVelocity.X, EntityPduToDeadReckon.EntityLinearVelocity.Y, EntityPduToDeadReckon.EntityLinearVelocity.Z);
-                        dvec3 AccelerationVector = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.X,
-                            EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.Z);
                         dvec3 AngularVelocity = new dvec3(0, 0, 0);
 
-                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime);
+                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, dvec3.Zero, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime, false);
 
                         DeadReckonedPdu.EntityLocation = new Vector3Double
                         {
@@ -197,9 +195,9 @@ namespace GRILLDIS
                         if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                         {
                             //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out FLatLonAlt llh);
 
-                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
+                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh);
                             DeadReckonedPdu.EntityOrientation = new Orientation
                             {
                                 Psi = psiThetaPhiRadians.Psi,
@@ -215,11 +213,9 @@ namespace GRILLDIS
                         // Form GLM vectors for position, velocity, and acceleration
                         dvec3 PositionVector = new dvec3(EntityPduToDeadReckon.EntityLocation.X, EntityPduToDeadReckon.EntityLocation.Y, EntityPduToDeadReckon.EntityLocation.Z);
                         dvec3 VelocityVector = new dvec3(EntityPduToDeadReckon.EntityLinearVelocity.X, EntityPduToDeadReckon.EntityLinearVelocity.Y, EntityPduToDeadReckon.EntityLinearVelocity.Z);
-                        dvec3 AccelerationVector = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.X,
-                            EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityLinearAcceleration.Z);
                         dvec3 AngularVelocity = new dvec3(0, 0, 0);
 
-                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime);
+                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, dvec3.Zero, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime, false);
 
                         DeadReckonedPdu.EntityLocation = new Vector3Double
                         {
@@ -253,7 +249,7 @@ namespace GRILLDIS
                         dvec3 AngularVelocity = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
                             EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
 
-                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime);
+                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime, true);
 
                         DeadReckonedPdu.EntityLocation = new Vector3Double
                         {
@@ -284,7 +280,7 @@ namespace GRILLDIS
                         dvec3 AngularVelocity = new dvec3(EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.X,
                             EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Y, EntityPduToDeadReckon.DeadReckoningParameters.EntityAngularVelocity.Z);
 
-                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime);
+                        dvec3 deadReckonLocation = CalculateBodyDeadReckonedPosition(PositionVector, VelocityVector, AccelerationVector, AngularVelocity, EntityPduToDeadReckon.EntityOrientation, DeltaTime, true);
 
                         DeadReckonedPdu.EntityLocation = new Vector3Double
                         {
@@ -296,9 +292,9 @@ namespace GRILLDIS
                         if (GetLocalEulerAngles(EntityPduToDeadReckon.DeadReckoningParameters.OtherParameters, out Orientation LocalRotation))
                         {
                             //Convert Local Rotator from Heading, Pitch, Roll to Psi, Theta, Phi
-                            FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation);
+                            Conversions.CalculateLatLonHeightFromEcefXYZ(EntityPduToDeadReckon.EntityLocation, out FLatLonAlt llh);
 
-                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh.Latitude, llh.Longitude);
+                            FPsiThetaPhi psiThetaPhiRadians = Conversions.CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(new FHeadingPitchRoll(LocalRotation), llh);
                             DeadReckonedPdu.EntityOrientation = new Orientation
                             {
                                 Psi = psiThetaPhiRadians.Psi,
@@ -367,10 +363,10 @@ namespace GRILLDIS
         /// <param name="entityOrientation">The orientation of the entity in radians</param>
         /// <param name="deltaTime">The time increment for dead reckoning calculation</param>
         /// <returns>The position vector in body coordinates.</returns>
-        public static dvec3 CalculateBodyDeadReckonedPosition(dvec3 entityLocation, dvec3 entityLinearVelocity, dvec3 entityLinearAcceleration, dvec3 entityAngularVelocity, Orientation entityOrientation, float deltaTime)
+        public static dvec3 CalculateBodyDeadReckonedPosition(dvec3 entityLocation, dvec3 entityLinearVelocity, dvec3 entityLinearAcceleration, dvec3 entityAngularVelocity, Orientation entityOrientation, float deltaTime, bool includeAcceleration)
         {
             dmat3 SkewMatrix = Conversions.CreateSkewMatrix(entityAngularVelocity);
-            dvec3 BodyAccelerationVector = entityLinearAcceleration - (SkewMatrix * entityLinearVelocity);
+            dvec3 BodyAccelerationVector = (includeAcceleration) ? entityLinearAcceleration - (SkewMatrix * entityLinearVelocity) : dvec3.Zero;
 
             // Get the entity's current orientation matrix
             dmat3 OrientationMatrix = GetEntityOrientationMatrix(entityOrientation);
@@ -412,11 +408,20 @@ namespace GRILLDIS
             double cr = Math.Cos(PhiRadians / 2);
             double sr = Math.Sin(PhiRadians / 2);
 
-            Quaternion entityQuaternion = new Quaternion();
-            entityQuaternion.w = (float)(cr * cp * cy + sr * sp * sy);
-            entityQuaternion.x = (float)(sr * cp * cy - cr * sp * sy);
-            entityQuaternion.y = (float)(cr * sp * cy + sr * cp * sy);
-            entityQuaternion.z = (float)(cr * cp * sy - sr * sp * cy);
+            Quaternion entityQuaternion = new Quaternion
+            {
+                w = (float)(cy * cp * cr + sy * sp * sr),
+                x = (float)(cy * cp * sr - sy * sp * cr),
+                y = (float)(cy * sp * cr + sy * cp * sr),
+                z = (float)(sy * cp * cr - cy * sp * sr)
+            };
+
+            //If negative, flip it
+            if (entityQuaternion.w < 0)
+            {
+                entityQuaternion = Quaternion.Inverse(entityQuaternion);
+                entityQuaternion.w *= -1;
+            }
 
             return entityQuaternion;
         }
@@ -531,11 +536,19 @@ namespace GRILLDIS
             dvec3 unitVector = AngularVelocityVector / AngularVelocityMagnitude;
 
             Quaternion deadReckoningQuaternion = new Quaternion();
+            double betaHalved = beta / 2;
 
-            deadReckoningQuaternion.w = (float)Math.Cos(beta / 2);
-            deadReckoningQuaternion.x = (float)(unitVector.x * Math.Sin(beta / 2));
-            deadReckoningQuaternion.y = (float)(unitVector.y * Math.Sin(beta / 2));
-            deadReckoningQuaternion.z = (float)(unitVector.z * Math.Sin(beta / 2));
+            deadReckoningQuaternion.w = (float)Math.Cos(betaHalved);
+            deadReckoningQuaternion.x = (float)(unitVector.x * Math.Sin(betaHalved));
+            deadReckoningQuaternion.y = (float)(unitVector.y * Math.Sin(betaHalved));
+            deadReckoningQuaternion.z = (float)(unitVector.z * Math.Sin(betaHalved));
+
+            //If negative, flip it
+            if (deadReckoningQuaternion.w < 0)
+            {
+                deadReckoningQuaternion = Quaternion.Inverse(deadReckoningQuaternion);
+                deadReckoningQuaternion.w *= -1;
+            }
 
             return deadReckoningQuaternion;
         }
@@ -686,8 +699,8 @@ namespace GRILLDIS
                 otherParameters[1] = 0;
                 otherParameters[2] = 0;
 
-                FLatLonAlt llh = Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation);
-                FHeadingPitchRoll headingPitchRollRadians = Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(new FPsiThetaPhi(EntityPsiThetaPhiRadians), llh.Latitude, llh.Longitude);
+                Conversions.CalculateLatLonHeightFromEcefXYZ(EntityECEFLocation, out FLatLonAlt llh);
+                FHeadingPitchRoll headingPitchRollRadians = Conversions.CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(new FPsiThetaPhi(EntityPsiThetaPhiRadians), llh);
 
                 //Convert the floats to unsigned char arrays
                 charHeading = BitConverter.GetBytes((float)headingPitchRollRadians.Heading);

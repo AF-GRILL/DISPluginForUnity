@@ -64,9 +64,9 @@ namespace GRILLDIS
         /// </summary>
         /// <param name="ecefLocation">The ECEF location</param>
         /// <return>The converted latitude in degrees, longitude in degrees, and height in meters</return>
-        public static FLatLonAlt CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation)
+        public static bool CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation, out FLatLonAlt latLonAltLocation)
         {
-            FLatLonAlt latLonAltLocation = new FLatLonAlt();
+            latLonAltLocation = new FLatLonAlt();
 
             double earthEquitorialRadiusMeters = 6378137;
             double earthPolarRadiusMeters = 6356752.3142;
@@ -83,6 +83,13 @@ namespace GRILLDIS
             double c = (Math.Pow(eSquared, 2) * F * Math.Pow(p, 2)) / Math.Pow(G, 3);
 
             double s = Math.Pow(1 + c + Math.Sqrt(Math.Pow(c, 2) + 2 * c), 1f / 3f);
+
+            if (double.IsNaN(s))
+            {
+                Debug.LogError("Invalid calculation when converting ECEF to LLA! Given ECEF coordinates resulted in NaN calculation. Returning 0, 0, 0.");
+                return false;
+            }
+
             double k = s + 1 + 1 / s;
             double P = F / (3 * Math.Pow(k, 2) * Math.Pow(G, 2));
             double Q = Math.Sqrt(1 + 2 * Math.Pow(eSquared, 2) * P);
@@ -96,7 +103,7 @@ namespace GRILLDIS
             latLonAltLocation.Latitude = glm.Degrees(Math.Atan((ecefLocation.Z + ePrimeSquared * zNot) / p));
             latLonAltLocation.Longitude = glm.Degrees(Math.Atan2(ecefLocation.Y, ecefLocation.X));
 
-            return latLonAltLocation;
+            return true;
         }
 
         /// <summary>
@@ -264,21 +271,20 @@ namespace GRILLDIS
         /// <summary>
         /// Calculates the East, North, and Up vectors at given latitude and longitude.
         /// </summary>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The local vectors pointing North, pointing East, and toward the center of the Earth at the given latitude and longitude</return>
-        public static FNorthEastDown CalculateNorthEastDownVectorsFromLatLon(double latitudeDegrees, double longitudeDegrees)
+        public static FNorthEastDown CalculateNorthEastDownVectorsFromLatLon(FLatLonAlt latLonAlt)
         {
             FNorthEastDown NorthEastDownVectors;
             NorthEastDownVectors.NorthVector = new Vector3(0, 0, 1);
             NorthEastDownVectors.EastVector = new Vector3(0, 1, 0);
             NorthEastDownVectors.DownVector = new Vector3(-1, 0, 0);
 
-            NorthEastDownVectors.EastVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.EastVector, longitudeDegrees, NorthEastDownVectors.NorthVector);
-            NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, longitudeDegrees, NorthEastDownVectors.NorthVector);
+            NorthEastDownVectors.EastVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.EastVector, latLonAlt.Longitude, NorthEastDownVectors.NorthVector);
+            NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, latLonAlt.Longitude, NorthEastDownVectors.NorthVector);
 
-            NorthEastDownVectors.NorthVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.NorthVector, latitudeDegrees, -NorthEastDownVectors.EastVector);
-            NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, latitudeDegrees, -NorthEastDownVectors.EastVector);
+            NorthEastDownVectors.NorthVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.NorthVector, latLonAlt.Latitude, -NorthEastDownVectors.EastVector);
+            NorthEastDownVectors.DownVector = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, latLonAlt.Latitude, -NorthEastDownVectors.EastVector);
 
             return NorthEastDownVectors;
         }
@@ -287,8 +293,8 @@ namespace GRILLDIS
         /// Calculates the latitude and longitude at the given East, North, and Up vectors.
         /// </summary>
         /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
+        
         public static void CalculateLatLonFromNorthEastDownVectors(FNorthEastDown NorthEastDownVectors, out double latitudeDegrees, out double longitudeDegrees)
         {
             longitudeDegrees = glm.Degrees(Math.Acos(Vector3.Dot(new Vector3(0, 1, 0), NorthEastDownVectors.EastVector) / NorthEastDownVectors.EastVector.magnitude));
@@ -299,12 +305,11 @@ namespace GRILLDIS
         /// Calculates the DIS orientation values Psi, Theta, and Phi in degrees with the given Heading, Pitch, and Roll in degrees at the given Latitude and Longitude.
         /// </summary>
         /// <param name="HeadingPitchRollDegrees">The degrees from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</return>
-        public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double latitudeDegrees, double longitudeDegrees)
+        public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, FLatLonAlt latLonAlt)
         {
-            FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees);
+            FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latLonAlt);
 
             ApplyHeadingPitchRollToNorthEastDownVector(HeadingPitchRollDegrees, NorthEastDownVectors, out Vector3 X, out Vector3 Y, out _);
 
@@ -331,29 +336,27 @@ namespace GRILLDIS
         /// Calculates the DIS orientation values Psi, Theta, and Phi in radians with the given Heading, Pitch, and Roll in radians at the given Latitude and Longitude.
         /// </summary>
         /// <param name="HeadingPitchRollRadians">The radians from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</return>
-        public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double latitudeDegrees, double longitudeDegrees)
+        public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, FLatLonAlt latLonAlt)
         {
             FHeadingPitchRoll HeadingPitchRollDegrees;
             HeadingPitchRollDegrees.Heading = glm.Degrees(HeadingPitchRollRadians.Heading);
             HeadingPitchRollDegrees.Pitch = glm.Degrees(HeadingPitchRollRadians.Pitch);
             HeadingPitchRollDegrees.Roll = glm.Degrees(HeadingPitchRollRadians.Roll);
 
-            return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
+            return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latLonAlt);
         }
 
         /// <summary>
         /// Calculates the DIS orientation values Psi, Theta, and Phi in radians with the given Heading, Pitch, and Roll in degrees at the given Latitude and Longitude.
         /// </summary>
         /// <param name="HeadingPitchRollDegrees">The degrees from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</return>
-        public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double latitudeDegrees, double longitudeDegrees)
+        public static FPsiThetaPhi CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, FLatLonAlt latLonAlt)
         {
-            FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
+            FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(HeadingPitchRollDegrees, latLonAlt);
             psiThetaPhiRadians.Psi = glm.Radians(psiThetaPhiRadians.Psi);
             psiThetaPhiRadians.Theta = glm.Radians(psiThetaPhiRadians.Theta);
             psiThetaPhiRadians.Phi = glm.Radians(psiThetaPhiRadians.Phi);
@@ -365,29 +368,27 @@ namespace GRILLDIS
         /// Calculates the DIS orientation values Psi, Theta, and Phi in degrees with the given Heading, Pitch, and Roll in radians at the given Latitude and Longitude.
         /// </summary>
         /// <param name="HeadingPitchRollRadians">The radians from North of the facing direction (heading), the radians rotated about the local X axis (pitch), and the radians rotated about the local Z axis (roll)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</return>
-        public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double latitudeDegrees, double longitudeDegrees)
+        public static FPsiThetaPhi CalculatePsiThetaPhiDegreesFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, FLatLonAlt latLonAlt)
         {
             FHeadingPitchRoll headingPitchRollDegrees;
             headingPitchRollDegrees.Heading = glm.Degrees(HeadingPitchRollRadians.Heading);
             headingPitchRollDegrees.Pitch = glm.Degrees(HeadingPitchRollRadians.Pitch);
             headingPitchRollDegrees.Roll = glm.Degrees(HeadingPitchRollRadians.Roll);
 
-            return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, latitudeDegrees, longitudeDegrees);
+            return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, latLonAlt);
         }
 
         /// <summary>
         /// Calculates the Heading, Pitch, and Roll in degrees from the given DIS orientation values Psi, Theta, and Phi in degrees at the given Latitude and Longitude.
         /// </summary>
         /// <param name="psiThetaPhiDegrees">The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The degrees from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
-        public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, double latitudeDegrees, double longitudeDegrees)
+        public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, FLatLonAlt latLonAlt)
         {
-            FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latitudeDegrees, longitudeDegrees);
+            FNorthEastDown NorthEastDownVectors = CalculateNorthEastDownVectorsFromLatLon(latLonAlt);
 
             Vector3 x0 = new Vector3(1, 0, 0);
             Vector3 y0 = new Vector3(0, 1, 0);
@@ -413,12 +414,11 @@ namespace GRILLDIS
         /// Calculates the Heading, Pitch, and Roll in radians from the given DIS orientation values Psi, Theta, and Phi in radians at the given Latitude and Longitude.
         /// </summary>
         /// <param name="psiThetaPhiDegrees">The rotation about the Y axis in degrees (Psi),the rotation about the X axis in degrees (Theta), the rotation about the Z axis in degrees (Phi)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The radians from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
-        public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, double latitudeDegrees, double longitudeDegrees)
+        public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi psiThetaPhiDegrees, FLatLonAlt latLonAlt)
         {
-            FHeadingPitchRoll headingPitchRollRadians = CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
+            FHeadingPitchRoll headingPitchRollRadians = CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latLonAlt);
             headingPitchRollRadians.Heading = glm.Radians(headingPitchRollRadians.Heading);
             headingPitchRollRadians.Pitch = glm.Radians(headingPitchRollRadians.Pitch);
             headingPitchRollRadians.Roll = glm.Radians(headingPitchRollRadians.Roll);
@@ -430,96 +430,90 @@ namespace GRILLDIS
         /// Calculates the Heading, Pitch, and Roll in degrees from the given DIS orientation values Psi, Theta, and Phi in radians at the given Latitude and Longitude.
         /// </summary>
         /// <param name="psiThetaPhiRadians">The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The degrees from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
-        public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, double latitudeDegrees, double longitudeDegrees)
+        public static FHeadingPitchRoll CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, FLatLonAlt latLonAlt)
         {
             FPsiThetaPhi psiThetaPhiDegrees;
             psiThetaPhiDegrees.Psi = glm.Degrees(psiThetaPhiRadians.Psi);
             psiThetaPhiDegrees.Theta = glm.Degrees(psiThetaPhiRadians.Theta);
             psiThetaPhiDegrees.Phi = glm.Degrees(psiThetaPhiRadians.Phi);
 
-            return CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
+            return CalculateHeadingPitchRollDegreesFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latLonAlt);
         }
 
         /// <summary>
         /// Calculates the Heading, Pitch, and Roll in radians from the given DIS orientation values Psi, Theta, and Phi in degrees at the given Latitude and Longitude.
         /// </summary>
         /// <param name="psiThetaPhiRadians">The rotation about the Y axis in radians (Psi),the rotation about the X axis in radians (Theta), the rotation about the Z axis in radians (Phi)</param>
-        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The radians from North of the facing direction (heading), the degrees rotated about the local X axis (pitch), and the degrees rotated about the local Z axis (roll)</return>
-        public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, double latitudeDegrees, double longitudeDegrees)
+        public static FHeadingPitchRoll CalculateHeadingPitchRollRadiansFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi psiThetaPhiRadians, FLatLonAlt latLonAlt)
         {
             FPsiThetaPhi psiThetaPhiDegrees;
             psiThetaPhiDegrees.Psi = glm.Degrees(psiThetaPhiRadians.Psi);
             psiThetaPhiDegrees.Theta = glm.Degrees(psiThetaPhiRadians.Theta);
             psiThetaPhiDegrees.Phi = glm.Degrees(psiThetaPhiRadians.Phi);
 
-            return CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latitudeDegrees, longitudeDegrees);
+            return CalculateHeadingPitchRollRadiansFromPsiThetaPhiDegreesAtLatLon(psiThetaPhiDegrees, latLonAlt);
         }
 
         /// <summary>
         /// Get the Unity rotation from the given Heading, Pitch, Roll rotation in degrees.
         /// </summary>
         /// <param name="HeadingPitchRollDegrees">The Heading, Pitch, Roll rotation in degrees to get the Unity rotation from.</param>
-        /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-        public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, double LatitudeDegrees, double LongitudeDegrees)
+        public static Vector3 GetUnityRotationFromHeadingPitchRollDegreesAtLatLon(FHeadingPitchRoll HeadingPitchRollDegrees, FLatLonAlt latLonAlt)
         {
             FHeadingPitchRoll headingPitchRollRadians;
             headingPitchRollRadians.Heading = glm.Radians(HeadingPitchRollDegrees.Heading);
             headingPitchRollRadians.Pitch = glm.Radians(HeadingPitchRollDegrees.Pitch);
             headingPitchRollRadians.Roll = glm.Radians(HeadingPitchRollDegrees.Roll);
 
-            return GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(headingPitchRollRadians, LatitudeDegrees, LongitudeDegrees);
+            return GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(headingPitchRollRadians, latLonAlt);
         }
 
         /// <summary>
         /// Get the Unity rotation from the given Heading, Pitch, Roll rotation in radians.
         /// </summary>
         /// <param name="HeadingPitchRollRadians">The Heading, Pitch, Roll rotation in radians to get the Unity rotation from.</param>
-        /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The Unity rotation of the given Heading, Pitch, Roll rotation</return>
-        public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, double LatitudeDegrees, double LongitudeDegrees)
+        public static Vector3 GetUnityRotationFromHeadingPitchRollRadiansAtLatLon(FHeadingPitchRoll HeadingPitchRollRadians, FLatLonAlt latLonAlt)
         {
-            FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(HeadingPitchRollRadians, LatitudeDegrees, LongitudeDegrees);
+            FPsiThetaPhi psiThetaPhiRadians = CalculatePsiThetaPhiRadiansFromHeadingPitchRollRadiansAtLatLon(HeadingPitchRollRadians, latLonAlt);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, latLonAlt);
         }
 
         /// <summary>
         /// Get the Unity rotation from the given Psi, Theta, Phi rotation in radians.
         /// </summary>
         /// <param name="PsiThetaPhiDegrees">The Psi, Theta, Phi rotation in degrees to get the Unity rotation from.</param>
-        /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <return>The Unity rotation of the given Psi, Theta, Phi rotation</return>
-        public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, double LatitudeDegrees, double LongitudeDegrees)
+        public static Vector3 GetUnityRotationFromPsiThetaPhiDegreesAtLatLon(FPsiThetaPhi PsiThetaPhiDegrees, FLatLonAlt latLonAlt)
         {
             FPsiThetaPhi psiThetaPhiRadians;
             psiThetaPhiRadians.Psi = glm.Radians(PsiThetaPhiDegrees.Psi);
             psiThetaPhiRadians.Theta = glm.Radians(PsiThetaPhiDegrees.Theta);
             psiThetaPhiRadians.Phi = glm.Radians(PsiThetaPhiDegrees.Phi);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(psiThetaPhiRadians, latLonAlt);
         }
 
         /// <summary>
         /// Get the Unity rotation from the given Psi, Theta, Phi rotation in radians.
         /// </summary>
         /// <param name="PsiThetaPhiRadians">The Psi, Theta, Phi rotation in radians to get the Unity rotation from.</param>
-        /// <param name="LatitudeDegrees">The target latitude given in degrees</param>
-        /// <param name="LongitudeDegrees">The target longitude given in degrees</param>
+        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
         /// <returns>The Unity rotation of the given Psi, Theta, Phi rotation</returns>
-        public static Vector3 GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi PsiThetaPhiRadians, double LatitudeDegrees, double LongitudeDegrees)
+        public static Vector3 GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(FPsiThetaPhi PsiThetaPhiRadians, FLatLonAlt latLonAlt)
         {
             Vector3 unityRotation = Vector3.zero;
 
-            FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, LatitudeDegrees, LongitudeDegrees);
+            FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, latLonAlt);
 
             //Unity Roll and Pitch axes are backwards from DIS. Invert as needed
             unityRotation.z = -HeadingPitchRollDegrees.Roll;
@@ -538,9 +532,9 @@ namespace GRILLDIS
         {
             FPsiThetaPhi PsiThetaPhiRadians = new FPsiThetaPhi(EntityStatePduIn.EntityOrientation);
 
-            FLatLonAlt lla = CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation);
+            CalculateLatLonHeightFromEcefXYZ(EntityStatePduIn.EntityLocation, out FLatLonAlt lla);
 
-            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla.Latitude, lla.Longitude);
+            return GetUnityRotationFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, lla);
         }
 
         /// <summary>
@@ -594,7 +588,7 @@ namespace GRILLDIS
             FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation);
             FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation, OriginRebasingOffset);
 
-            return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
+            return CalculatePsiThetaPhiDegreesFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
         }
 
         /// <summary>
@@ -609,7 +603,7 @@ namespace GRILLDIS
             FHeadingPitchRoll headingPitchRollDegrees = GetHeadingPitchRollFromUnityRotation(UnityRotation);
             FLatLonAlt lla = GeoReferencingSystem.UnityToLatLonAlt(UnityLocation, OriginRebasingOffset);
 
-            return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla.Latitude, lla.Longitude);
+            return CalculatePsiThetaPhiRadiansFromHeadingPitchRollDegreesAtLatLon(headingPitchRollDegrees, lla);
         }
 
         /// <summary>

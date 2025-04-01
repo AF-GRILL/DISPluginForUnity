@@ -232,7 +232,7 @@ namespace GRILLDIS
                 case EEarthShape.RoundEarth:
                     {
                         Vector3Double ecef = UnityToECEF(UnityLocation, OriginRebasingOffset);
-                        llaCoords = Conversions.CalculateLatLonHeightFromEcefXYZ(ecef);
+                        Conversions.CalculateLatLonHeightFromEcefXYZ(ecef, out llaCoords);
                         break;
                     }
                 case EEarthShape.FlatEarth:
@@ -429,21 +429,21 @@ namespace GRILLDIS
                         dvec4 easternPoint = ecefLocationToTransform + transformedEastUnitVector.Row0;
                         dvec4 northernPoint = ecefLocationToTransform + transformedNorthUnitVector.Row0;
 
-                        FLatLonAlt originLLA = Conversions.CalculateLatLonHeightFromEcefXYZ(ECEFLocation);
-                        FLatLonAlt easternLLA = Conversions.CalculateLatLonHeightFromEcefXYZ(
+                        Conversions.CalculateLatLonHeightFromEcefXYZ(ECEFLocation, out FLatLonAlt originLLA);
+                        Conversions.CalculateLatLonHeightFromEcefXYZ(
                             new Vector3Double
                             {
                                 X = easternPoint.x,
                                 Y = easternPoint.y,
                                 Z = easternPoint.z
-                            });
-                        FLatLonAlt northernLLA = Conversions.CalculateLatLonHeightFromEcefXYZ(
+                            }, out FLatLonAlt easternLLA);
+                        Conversions.CalculateLatLonHeightFromEcefXYZ(
                             new Vector3Double
                             {
                                 X = northernPoint.x,
                                 Y = northernPoint.y,
                                 Z = northernPoint.z
-                            });
+                            }, out FLatLonAlt northernLLA);
 
                         FUTMCoordinates projectedOrigin = LatLonAltToProjected(originLLA);
                         FUTMCoordinates projectedEastern = LatLonAltToProjected(easternLLA);
@@ -681,7 +681,7 @@ namespace GRILLDIS
         /// <returns>The X (East), Y (North), and Z (Up) location in a flat Earth coordinate system.</returns>
         private Vector3Double ecef_to_flatearth(Vector3Double ecefLocation)
         {
-            FLatLonAlt lla = Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLocation);
+            Conversions.CalculateLatLonHeightFromEcefXYZ(ecefLocation, out FLatLonAlt lla);
 
             return geodetic_to_flatearth(lla);
         }

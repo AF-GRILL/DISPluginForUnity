@@ -166,11 +166,19 @@ namespace GRILLDIS
                 else if (PDUPacketToProcess is DetonationPdu)
                 {
                     DetonationPdu detonationPdu = (DetonationPdu)PDUPacketToProcess;
-                    DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(detonationPdu.MunitionID);
 
-                    if (disReceiveComponent != null)
+                    if (PDUUtil.CheckEntityIDsEqual(detonationPdu.MunitionID, new EntityID()))
+                    {			
+                        //DetonationPDU Munition ID is set to NO_SPECIFIC_ENTITY. Call a generic handle.
+                        disManagerScript.OnNoSpecificEntityDetonationPDUReceived.Invoke(detonationPdu);
+                    }
+                    else
                     {
-                        disReceiveComponent.HandleDetonationPDU(detonationPdu);
+                        DISReceiveComponent disReceiveComponent = disManagerScript.GetAssociatedDISReceiveComponent(detonationPdu.MunitionID);
+                        if (disReceiveComponent != null)
+                        {
+                            disReceiveComponent.HandleDetonationPDU(detonationPdu);
+                        }
                     }
                 }
                 else if (PDUPacketToProcess is RemoveEntityPdu)
@@ -229,7 +237,36 @@ namespace GRILLDIS
                             DISComponent.HandleElectronicEmissionsPDU(electronicEmisionsPdu);
                         }
                     }
+                }
+                else if(PDUPacketToProcess is SignalPdu)
+                {
+                    SignalPdu signalPdu = (SignalPdu)PDUPacketToProcess;
+                    //Verify that we are the appropriate sim to handle the SignalPdu
+                    if (signalPdu.ExerciseID == disManagerScript.ExerciseID)
+                    {
+                        //Get associated OpenDISComponent and relay information
+                        DISReceiveComponent DISComponent = disManagerScript.GetAssociatedDISReceiveComponent(signalPdu.EntityId);
 
+                        if (DISComponent != null)
+                        {
+                            DISComponent.HandleSignalPDU(signalPdu);
+                        }
+                    }
+                }
+                else if(PDUPacketToProcess is DesignatorPdu)
+                {
+                    DesignatorPdu designatorPdu = (DesignatorPdu)PDUPacketToProcess;
+                    //Verify that we are the appropriate sim to handle the SignalPdu
+                    if (designatorPdu.ExerciseID == disManagerScript.ExerciseID)
+                    {
+                        //Get associated OpenDISComponent and relay information
+                        DISReceiveComponent DISComponent = disManagerScript.GetAssociatedDISReceiveComponent(designatorPdu.DesignatingEntityID);
+
+                        if (DISComponent != null)
+                        {
+                            DISComponent.HandleDesignatorPDU(designatorPdu);
+                        }
+                    }
                 }
             }
         }
