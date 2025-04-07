@@ -40,12 +40,15 @@ namespace GRILLDIS
             }
         }
 
-        public void CheckForUpdate()
+        public void CheckForUpdates()
         {
-            //Check if any messages have been received. If so, dequeue them and delegate them appropriately
-            if (_pduMessageQueue.TryDequeue(out Pdu receivedPdu))
+            //Check if any messages have been received. If so, dequeue them all and delegate them appropriately
+            while (!_pduMessageQueue.IsEmpty)
             {
-                _pduDelegate(receivedPdu);
+                if (_pduMessageQueue.TryDequeue(out Pdu receivedPdu))
+                {
+                    _pduDelegate(receivedPdu);
+                }
             }
         }
     }

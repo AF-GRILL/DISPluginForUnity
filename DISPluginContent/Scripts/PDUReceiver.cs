@@ -74,7 +74,7 @@ namespace GRILLDIS
             if (pduProcessor != null)
             {
                 //Check to see if any PDUs have been received since the last tick
-                pduProcessor.CheckForUpdate();
+                pduProcessor.CheckForUpdates();
             }
         }
 
