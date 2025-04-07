@@ -125,10 +125,18 @@ namespace GRILLDIS.UDPReceiverMulti
 
         private void asyncReceive(IAsyncResult result)
         {
-
+            byte[] receivedBytes;
             if (!isCancelled)
             {
-                byte[] receivedBytes = client.EndReceive(result, ref epReceive);
+                try
+                {
+                    receivedBytes = client.EndReceive(result, ref epReceive);
+                }
+                catch (System.ObjectDisposedException ex)
+                {
+                    Console.WriteLine("Async receive socket object disposed exception: " + ex.Message);
+                    return;
+                }
 
                 //Ignore packets from self if loopback is disabled. This will cover ignoring broadcast packets. Ignoring multicast packets is covered in setting up of the receive socket above through MulticastLoopback.
                 if (!allowLoopback && epReceive.Address.ToString().Equals(LocalIPAddress))

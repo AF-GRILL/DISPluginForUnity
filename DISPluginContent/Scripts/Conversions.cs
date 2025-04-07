@@ -230,28 +230,28 @@ namespace GRILLDIS
 
         public static void GetNEDVectorRotationOffset(FNorthEastDown StartNEDVectors, FNorthEastDown DestinationNEDVectors, out double RollOffset, out double PitchOffset, out double YawOffset)
         {
-	        //Make needed matrices entries
-	        double offset_M11 = Vector3.Dot(StartNEDVectors.EastVector, DestinationNEDVectors.EastVector);
+            //Make needed matrices entries
+            double offset_M11 = Vector3.Dot(StartNEDVectors.EastVector, DestinationNEDVectors.EastVector);
             double offset_M21 = Vector3.Dot(-StartNEDVectors.NorthVector, DestinationNEDVectors.EastVector);
             double offset_M31 = Vector3.Dot(-StartNEDVectors.DownVector, DestinationNEDVectors.EastVector);
             double offset_M32 = Vector3.Dot(-StartNEDVectors.DownVector, DestinationNEDVectors.NorthVector);
             double offset_M33 = Vector3.Dot(-StartNEDVectors.DownVector, -DestinationNEDVectors.DownVector);
 
             //Use calculated matrices entries to find offsets of both origin and entity
-            RollOffset = glm.Degrees(Math.Atan2(offset_M32, offset_M33));
-	        PitchOffset = glm.Degrees(Math.Atan2(offset_M31, Math.Sqrt(Math.Pow(offset_M32, 2) + Math.Pow(offset_M33, 2))));
-	        YawOffset = glm.Degrees(Math.Atan2(offset_M21, offset_M11));
+            RollOffset = -glm.Degrees(Math.Atan2(offset_M32, offset_M33));
+            PitchOffset = -glm.Degrees(Math.Atan2(offset_M31, Math.Sqrt(Math.Pow(offset_M32, 2) + Math.Pow(offset_M33, 2))));
+            YawOffset = glm.Degrees(Math.Atan2(offset_M21, offset_M11));
         }
 
 
-    /// <summary>
-    /// Rotates the vector VectorToRotate around given axis AxisVector by Theta degrees
-    /// </summary>
-    /// <param name="vectorToRotate">The target vector to rotate</param>
-    /// <param name="thetaDegrees">The desired amount to rotation in degrees</param>
-    /// <param name="axisVector">The vector indicating the axis of rotation</param>
-    /// <return>The resultant rotated vector</return>
-    public static Vector3 RotateVectorAroundAxisByDegrees(Vector3 vectorToRotate, double thetaDegrees, Vector3 axisVector)
+        /// <summary>
+        /// Rotates the vector VectorToRotate around given axis AxisVector by Theta degrees
+        /// </summary>
+        /// <param name="vectorToRotate">The target vector to rotate</param>
+        /// <param name="thetaDegrees">The desired amount to rotation in degrees</param>
+        /// <param name="axisVector">The vector indicating the axis of rotation</param>
+        /// <return>The resultant rotated vector</return>
+        public static Vector3 RotateVectorAroundAxisByDegrees(Vector3 vectorToRotate, double thetaDegrees, Vector3 axisVector)
         {
             return RotateVectorAroundAxisByRadians(vectorToRotate, glm.Radians(thetaDegrees), axisVector);
         }
@@ -310,7 +310,6 @@ namespace GRILLDIS
         /// </summary>
         /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
         /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
-        
         public static void CalculateLatLonFromNorthEastDownVectors(FNorthEastDown NorthEastDownVectors, out double latitudeDegrees, out double longitudeDegrees)
         {
             longitudeDegrees = glm.Degrees(Math.Acos(Vector3.Dot(new Vector3(0, 1, 0), NorthEastDownVectors.EastVector) / NorthEastDownVectors.EastVector.magnitude));
@@ -545,27 +544,32 @@ namespace GRILLDIS
             {
                 NorthVector = EastNorthUpVectors.NorthVector,
                 EastVector = EastNorthUpVectors.EastVector,
-                DownVector = EastNorthUpVectors.UpVector *= -1
+                //Negate up vector to turn into down
+                DownVector = -EastNorthUpVectors.UpVector
             };
 
             //Get NED of the world origin
-            FNorthEastDown originNorthEastDown = new FNorthEastDown();
-            GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
+            FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
 
             //Get rotation difference going from world origin NED to entity location NED
-            GetNEDVectorRotationOffset(originNorthEastDown, NorthEastDownVectors, out double XAxisRotationAngle, out double YAxisRotationAngle, out double ZAxisRotationAngle);
+            GetNEDVectorRotationOffset(originNorthEastDown, NorthEastDownVectors, out double ZAxisRotationAngle, out double XAxisRotationAngle, out double YAxisRotationAngle);
 
             //Get the HPR that the entity would have
             FHeadingPitchRoll HeadingPitchRollDegrees = CalculateHeadingPitchRollDegreesFromPsiThetaPhiRadiansAtLatLon(PsiThetaPhiRadians, latLonAlt);
+            //Unity rotations for pitch and roll are opposite, negate them. Subtract 90 from heading for math in Quaternion multiplication
+            HeadingPitchRollDegrees.Heading -= 90;
+            HeadingPitchRollDegrees.Pitch *= -1;
+            HeadingPitchRollDegrees.Roll *= -1;
 
             Quaternion entityRotation = Quaternion.Euler((float)XAxisRotationAngle, (float)YAxisRotationAngle, (float)ZAxisRotationAngle);
             Quaternion originQuaternionWithHPR = Quaternion.Euler(HeadingPitchRollDegrees.Pitch, HeadingPitchRollDegrees.Heading, HeadingPitchRollDegrees.Roll);
 
-            Quaternion entityTransformWithHPR = originQuaternionWithHPR * entityRotation;
+            Quaternion entityTransformWithHPR = entityRotation * originQuaternionWithHPR;
 
-            unityRotation.x = -entityTransformWithHPR.eulerAngles.x;
-            unityRotation.y = entityTransformWithHPR.eulerAngles.y;
-            unityRotation.z = -entityTransformWithHPR.eulerAngles.z;
+            unityRotation.x = entityTransformWithHPR.eulerAngles.x;
+            //Undo yaw offset after Quaternion math to fix heading offset
+            unityRotation.y = entityTransformWithHPR.eulerAngles.y + 90;
+            unityRotation.z = entityTransformWithHPR.eulerAngles.z;
 
             return unityRotation;
         }
@@ -630,15 +634,16 @@ namespace GRILLDIS
             FNorthEastDown originNorthEastDown = GeoReferencingSystem.GetNEDVectorsAtEngineLocation(Vector3.zero);
 
             //Get rotation difference going from entity location NED to world origin NED
-            GetNEDVectorRotationOffset(NorthEastDownVectors, originNorthEastDown, out double XAxisRotationAngle, out double YAxisRotationAngle, out double ZAxisRotationAngle);
+            GetNEDVectorRotationOffset(NorthEastDownVectors, originNorthEastDown, out double ZAxisRotationAngle, out double XAxisRotationAngle, out double YAxisRotationAngle);
 
             Quaternion entityRotation = Quaternion.Euler((float)XAxisRotationAngle, (float)YAxisRotationAngle, (float)ZAxisRotationAngle);
-            Quaternion originRotationWithHPR = Quaternion.Euler(UnityRotation.x, UnityRotation.y, UnityRotation.z);
+            //Unity rotation for pitch is opposite, negate X
+            Quaternion originRotationWithHPR = Quaternion.Euler(-UnityRotation.x, UnityRotation.y, UnityRotation.z);
 
-            Quaternion entityTransformWithHPR = originRotationWithHPR * entityRotation;
+            Quaternion entityTransformWithHPR = entityRotation * originRotationWithHPR;
 
-            HeadingPitchRollDegrees.Roll = -entityTransformWithHPR.eulerAngles.z;
-            HeadingPitchRollDegrees.Pitch = -entityTransformWithHPR.eulerAngles.x;
+            HeadingPitchRollDegrees.Roll = entityTransformWithHPR.eulerAngles.z;
+            HeadingPitchRollDegrees.Pitch = entityTransformWithHPR.eulerAngles.x;
             HeadingPitchRollDegrees.Heading = entityTransformWithHPR.eulerAngles.y;
 
             return HeadingPitchRollDegrees;

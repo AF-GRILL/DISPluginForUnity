@@ -40,7 +40,7 @@ namespace GRILLDIS
 {
     public class GeoreferenceSystem : MonoBehaviour
     {
-        const double EPSILON = 2.220446049250313e-16;
+        const double EPSILON = 2.2204460492503131e-016;
         const double EARTH_MAJOR_AXIS = 6378137;
         const double EARTH_MINOR_AXIS = 6356752.314245;
         const double EARTH_FLATTENING = 298.257223563;
@@ -390,7 +390,7 @@ namespace GRILLDIS
         public FEastNorthUp GetENUVectorsAtECEFLocation(Vector3Double ECEFLocation)
         {
             FEastNorthUp ENU = new FEastNorthUp();
-            dmat4 WorldFrameToECEFFrameAtLocation = GetWorldFrameToECEFFrame(GeographicEllipsoid, OriginECEF);
+            dmat4 WorldFrameToECEFFrameAtLocation = GetWorldFrameToECEFFrame(GeographicEllipsoid, ECEFLocation);
             switch (EarthShape)
             {
                 case EEarthShape.RoundEarth:
@@ -398,13 +398,9 @@ namespace GRILLDIS
                         dmat4 UnityToECEF = WorldFrameToECEFFrameAtLocation * ECEFFrameToWorldFrame * UnityFrameToWorldFrame;
 
                         //Put in terms of Unity coordinate system
-                        dvec4 East = UnityToECEF.Column0;
-                        dvec4 North = UnityToECEF.Column2;
-                        dvec4 Up = UnityToECEF.Column1;
-
-                        ENU.EastVector = new Vector3((float)East.x, (float)East.y, (float)East.z);
-                        ENU.NorthVector = new Vector3((float)North.x, (float)North.y, (float)North.z);
-                        ENU.UpVector = new Vector3((float)Up.x, (float)Up.y, (float)Up.z);
+                        ENU.EastVector = new Vector3((float)UnityToECEF.m00, (float)UnityToECEF.m10, (float)UnityToECEF.m20).normalized;
+                        ENU.NorthVector = new Vector3((float)UnityToECEF.m01, (float)UnityToECEF.m11, (float)UnityToECEF.m21).normalized;
+                        ENU.UpVector = new Vector3((float)UnityToECEF.m02, (float)UnityToECEF.m12, (float)UnityToECEF.m22).normalized;
 
                         break;
                     }
@@ -512,9 +508,9 @@ namespace GRILLDIS
 
             //Note: dmat constructor is set up using columns
             WorldFrameToUnityFrame = new dmat4(
-                dvec4.UnitX,     // Easting (X) is Unity World Z
-                -dvec4.UnitY,    // Northing (Y) is Unity World -X because of left-handed convention
-                dvec4.UnitZ,     // Up (Z) is Unity World Y
+                dvec4.UnitX,     // Easting (X) is Unity World X
+                dvec4.UnitZ,    // Northing (Y) is Unity World Z
+                dvec4.UnitY,     // Up (Z) is Unity World Y
                 dvec4.UnitW);    // No Origin offset
             UnityFrameToWorldFrame = WorldFrameToUnityFrame.Inverse;
         }
@@ -527,6 +523,13 @@ namespace GRILLDIS
         /// <returns>The transformation matrix needed to convert Unity locations to ECEF CRS.</returns>
         private dmat4 GetWorldFrameToECEFFrame(Vector3Double Ellisoid, Vector3Double ECEFLocation)
         {
+            Vector3Double OneOverRadiiSquard = new Vector3Double
+            {
+                X = 1 / Math.Pow(Ellisoid.X, 2),
+                Y = 1 / Math.Pow(Ellisoid.Y, 2),
+                Z = 1 / Math.Pow(Ellisoid.Z, 2)
+            };
+
             // See ECEF standard : https://commons.wikimedia.org/wiki/File:ECEF_ENU_Longitude_Latitude_right-hand-rule.svg
             if (Math.Abs(ECEFLocation.X) < EPSILON &&
                 Math.Abs(ECEFLocation.Y) < EPSILON)
@@ -545,9 +548,9 @@ namespace GRILLDIS
                 }
 
                 return new dmat4(
-                    new dvec4(1, 0, 0, ECEFLocation.X),           // East = X
-                    new dvec4(0, 0, 1 * Sign, ECEFLocation.Y),   // North = Sign * Z
-                    new dvec4(0, -1 * Sign, 0, ECEFLocation.Z),    // Up = Sign*Y
+                    new dvec4(0, -1 * Sign, 0, ECEFLocation.X),   // Up = Sign * Y
+                    new dvec4(1, 0, 0, ECEFLocation.Y),           // East = X
+                    new dvec4(0, 0, 1 * Sign, ECEFLocation.Z),    // North = Sign * Z
                     new dvec4(0, 0, 0, 1));
             }
             else
@@ -555,9 +558,9 @@ namespace GRILLDIS
                 //Calculate the North, East, Up vectors of the ECEF location and create a transform matrix from them
                 Vector3Double Up = new Vector3Double
                 {
-                    X = ECEFLocation.X * (1 / Math.Pow(Ellisoid.X, 2)),
-                    Y = ECEFLocation.Y * (1 / Math.Pow(Ellisoid.Y, 2)),
-                    Z = ECEFLocation.Z * (1 / Math.Pow(Ellisoid.Z, 2))
+                    X = ECEFLocation.X * OneOverRadiiSquard.X,
+                    Y = ECEFLocation.Y * OneOverRadiiSquard.Y,
+                    Z = ECEFLocation.Z * OneOverRadiiSquard.Z
                 };
                 double UpMagnitude = Math.Sqrt(Math.Pow(Up.X, 2) + Math.Pow(Up.Y, 2) + Math.Pow(Up.Z, 2));
                 Up = new Vector3Double
@@ -584,7 +587,7 @@ namespace GRILLDIS
                 Vector3Double North = new Vector3Double
                 {
                     X = Up.Y * East.Z - Up.Z * East.Y,
-                    Y = Up.Z * East.X - Up.X * East.Z,
+                    Y = (Up.X * East.Z - Up.Z * East.X) * -1,
                     Z = Up.X * East.Y - Up.Y * East.X
                 };
 

@@ -103,6 +103,13 @@ namespace GRILLDIS
         /// Called after an Designator PDU is processed by the component. Passes the Designator PDU that was received as a parameter.
         /// </summary>
         public UnityEvent<DesignatorPdu> OnDesignatorPDUProcessed;
+        /// <summary>
+        /// Called after Ground Clamping is performed by the component.
+        /// Passes ground clamp position and rotation as parameters.
+        /// NOTE: Gets called after receiving Entity State PDUs or finishing Dead Reckoning Updates if Ground Clamping is enabled on the DISComponent.
+        /// Respective Entity State and Dead Reckoning events are called first. Implementing Ground Clamping location updates on top of these event may cause jitter in actor location.
+        /// </summary>
+        public UnityEvent<Vector3, Quaternion> OnGroundClampingUpdate;
 
         /// <summary>
         /// The Entity Type of the associated entity. Specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
@@ -506,10 +513,20 @@ namespace GRILLDIS
                 if (Physics.Raycast(raycastStartLocation, clampDirection, out hit, raycastDistance, GroundClampingCollisionLayer))
                 {
                     Vector3 clampLocation = hit.point;
-                    Quaternion clampRotation = Quaternion.FromToRotation(Vector3.forward, hit.normal);
+                    Vector3 newForward = Vector3.Cross(transform.right, hit.normal).normalized;
+                    Vector3 newRight = Vector3.Cross(hit.normal, newForward).normalized;
+                    Vector3 newUp = hit.normal.normalized;
 
-                    transform.position = clampLocation;
-                    transform.rotation = clampRotation;
+                    Matrix4x4 clampRotationMatrix = new Matrix4x4(newRight, newUp, newForward, Vector3.zero);
+                    Quaternion clampRotation = clampRotationMatrix.rotation;
+
+                    if (ApplyToOwner)
+                    {
+                        transform.position = clampLocation;
+                        transform.rotation = clampRotation;
+                    }
+
+                    OnGroundClampingUpdate.Invoke(clampLocation, clampRotation);
                 }
 
                 return true;
