@@ -63,7 +63,8 @@ namespace GRILLDIS
         /// Converts DIS X, Y, Z coordinates (ECEF) to Latitude, Longitude, and Height (LLH) all in double (64-bit) precision
         /// </summary>
         /// <param name="ecefLocation">The ECEF location</param>
-        /// <return>The converted latitude in degrees, longitude in degrees, and height in meters</return>
+        /// <param name="latLonAltLocation">The converted latitude in degrees, longitude in degrees, and height in meters</param>
+        /// <return>Whether or not the calculation was successful. Will only be unsuccessful if the given ECEF coordinates result in a NaN calculation.</return>
         public static bool CalculateLatLonHeightFromEcefXYZ(Vector3Double ecefLocation, out FLatLonAlt latLonAltLocation)
         {
             latLonAltLocation = new FLatLonAlt();
@@ -228,6 +229,14 @@ namespace GRILLDIS
             outZ = RotateVectorAroundAxisByDegrees(NorthEastDownVectors.DownVector, rollDegrees, NorthEastDownVectors.NorthVector);
         }
 
+        /// <summary>
+        /// Gets the rotational offset between the two given NED vectors
+        /// </summary>
+        /// <param name="StartNEDVectors">The North, East, Down vectors of the starting location</param>
+        /// <param name="DestinationNEDVectors">The North, East, Down vectors of the destination location</param>
+        /// <param name="RollOffset">The Unity Engine Roll offset in degrees to go from the origin to the destination</param>
+        /// <param name="PitchOffset">The Unity Engine Roll offset in degrees to go from the origin to the destination</param>
+        /// <param name="YawOffset">The Unity Engine Roll offset in degrees to go from the origin to the destination</param>
         public static void GetNEDVectorRotationOffset(FNorthEastDown StartNEDVectors, FNorthEastDown DestinationNEDVectors, out double RollOffset, out double PitchOffset, out double YawOffset)
         {
             //Make needed matrices entries
@@ -309,7 +318,8 @@ namespace GRILLDIS
         /// Calculates the latitude and longitude at the given East, North, and Up vectors.
         /// </summary>
         /// <param name="NorthEastDownVectors">The vectors pointing to the North, to the East, and toward the center of the Earth</param>
-        /// <param name="latLonAlt">The target latitude, longitude, and altitude given in degrees</param>
+        /// <param name="latitudeDegrees">The target latitude given in degrees</param>
+        /// <param name="longitudeDegrees">The target longitude given in degrees</param>
         public static void CalculateLatLonFromNorthEastDownVectors(FNorthEastDown NorthEastDownVectors, out double latitudeDegrees, out double longitudeDegrees)
         {
             longitudeDegrees = glm.Degrees(Math.Acos(Vector3.Dot(new Vector3(0, 1, 0), NorthEastDownVectors.EastVector) / NorthEastDownVectors.EastVector.magnitude));

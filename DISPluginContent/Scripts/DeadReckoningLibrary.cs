@@ -362,6 +362,7 @@ namespace GRILLDIS
         /// <param name="entityAngularVelocity">The initial angular acceleration in body coordinates</param>
         /// <param name="entityOrientation">The orientation of the entity in radians</param>
         /// <param name="deltaTime">The time increment for dead reckoning calculation</param>
+        /// <param name="includeAcceleration">Whether or not acceleration should be included in the body position calculation. Acceleration is typically not used for FPB and RPB dead reckoning formulas.</param>
         /// <returns>The position vector in body coordinates.</returns>
         public static dvec3 CalculateBodyDeadReckonedPosition(dvec3 entityLocation, dvec3 entityLinearVelocity, dvec3 entityLinearAcceleration, dvec3 entityAngularVelocity, Orientation entityOrientation, float deltaTime, bool includeAcceleration)
         {
