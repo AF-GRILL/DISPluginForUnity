@@ -54,6 +54,7 @@ namespace GRILLDIS
 
         private Dictionary<UInt64, GameObject> entityIDDictionary;
         private Dictionary<UInt64, GameObject> entityTypeDictionary;
+        private Dictionary<EntityTypeEditor, GameObject> entityTypeWildcardDictionary;
         private GeoreferenceSystem georeferenceScript;
         //Add event for handling no mapping for entity
 
@@ -61,6 +62,7 @@ namespace GRILLDIS
         {
             entityIDDictionary = new Dictionary<UInt64, GameObject>();
             entityTypeDictionary = new Dictionary<UInt64, GameObject>();
+            entityTypeWildcardDictionary = new Dictionary<EntityTypeEditor, GameObject>();
         }
 
         private void Awake()
@@ -76,20 +78,37 @@ namespace GRILLDIS
             {
                 foreach (EntityTypeEditor entityTypeEditor in entityTypeMapping.entityTypes)
                 {
-                    EntityType entityType = entityTypeEditor.toEntityType();
                     GameObject gameObject = entityTypeMapping.gameObject;
 
-                    UInt64 entityTypeU64 = PDUUtil.EntityTypeToUInt64(entityType);
-
-                    //Check if mapping already exists and update to new value if it does
-                    try
+                    if (entityTypeEditor.HasWildcards())
                     {
-                        entityTypeDictionary.Add(entityTypeU64, gameObject);
+                        //Check if mapping already exists and update to new value if it does
+                        try
+                        {
+                            entityTypeWildcardDictionary.Add(entityTypeEditor, gameObject);
+                        }
+                        catch (ArgumentException)
+                        {
+                            Debug.LogWarning("A DIS Enumeration already exists for " + entityTypeEditor.ToString() + " and is linked to " + entityTypeWildcardDictionary[entityTypeEditor].name + ". This enumeration will now point to: " + gameObject.name);
+                            entityTypeWildcardDictionary[entityTypeEditor] = gameObject;
+                        }
                     }
-                    catch (ArgumentException)
+                    else
                     {
-                        Debug.LogWarning("A DIS Enumeration already exists for " + entityTypeEditor.ToString() + " and is linked to " + entityTypeDictionary[entityTypeU64].name + ". This enumeration will now point to: " + gameObject.name);
-                        entityTypeDictionary[entityTypeU64] = gameObject;
+                        EntityType entityType = entityTypeEditor.toEntityType();
+
+                        UInt64 entityTypeU64 = PDUUtil.EntityTypeToUInt64(entityType);
+
+                        //Check if mapping already exists and update to new value if it does
+                        try
+                        {
+                            entityTypeDictionary.Add(entityTypeU64, gameObject);
+                        }
+                        catch (ArgumentException)
+                        {
+                            Debug.LogWarning("A DIS Enumeration already exists for " + entityTypeEditor.ToString() + " and is linked to " + entityTypeDictionary[entityTypeU64].name + ". This enumeration will now point to: " + gameObject.name);
+                            entityTypeDictionary[entityTypeU64] = gameObject;
+                        }
                     }
                 }
             }
@@ -103,33 +122,60 @@ namespace GRILLDIS
         /// <returns></returns>
         public GameObject SpawnOrGetGameObjectFromEntityStatePDU(EntityStatePdu entityStatePdu)
         {
-            EntityID entityID = entityStatePdu.EntityID;
-            EntityType entityType = entityStatePdu.EntityType;
-            UInt64 entityIDU64 = PDUUtil.EntityIDToUInt64(entityID);
-            string markingString = PDUUtil.getMarkingAsString(entityStatePdu);
-            string markingSAE = PDUUtil.getEntityStatePDUMarkingSAE(entityStatePdu);
+            EntityID receivedEntityID = entityStatePdu.EntityID;
+            EntityType receivedEntityType = entityStatePdu.EntityType;
+            UInt64 receivedEntityIDU64 = PDUUtil.EntityIDToUInt64(receivedEntityID);
+            string receivedMarkingString = PDUUtil.getMarkingAsString(entityStatePdu);
+            string receivedEntityTypeString = PDUUtil.getEntityTypeAsString(entityStatePdu);
             GameObject entityGameObject;
 
-            if (entityIDDictionary.TryGetValue(entityIDU64, out entityGameObject))
+            if (entityIDDictionary.TryGetValue(receivedEntityIDU64, out entityGameObject))
             {
                 return entityGameObject;
             }
             //This is the first time we have seen this entity state PDU
             else
             {
-                UInt64 entityTypeU64 = PDUUtil.EntityTypeToUInt64(entityType);
+                UInt64 entityTypeU64 = PDUUtil.EntityTypeToUInt64(receivedEntityType);
 
                 if ((entityStatePdu.EntityAppearance & (1 << 23)) != 0)
                 {
-                    Debug.Log("Received Entity State PDU with a Deactivated Entity Appearance for an entity that is not in the level. Ignoring the PDU. Entity marking: " + markingSAE);
+                    Debug.Log("Received Entity State PDU with a Deactivated Entity Appearance for an entity that is not in the level. Ignoring the PDU. Entity marking: " + receivedMarkingString);
                     return null;
                 }
 
-                //Check if this entity has a mapping specified
-                if (entityTypeDictionary.TryGetValue(entityTypeU64, out entityGameObject))
+                bool mappingFound = entityTypeDictionary.TryGetValue(entityTypeU64, out entityGameObject);
+                //If entity does not have a value specified, check wildcard entries
+                if (!mappingFound)
                 {
-                    string entityTypeString = PDUUtil.getEntityTypeAsString(entityStatePdu);
+                    Dictionary<EntityTypeEditor, GameObject> filledWildcardMappings = new Dictionary<EntityTypeEditor, GameObject>();
 
+                    //Iterate through all wildcards
+                    foreach(KeyValuePair<EntityTypeEditor, GameObject> pair in entityTypeWildcardDictionary)
+                    {
+                        EntityTypeEditor filledWildcardEntityType = pair.Key.FillWildcards(new EntityTypeEditor(receivedEntityType));
+
+                        //If all wildcards elements were filled
+                        if (!filledWildcardEntityType.HasWildcards())
+                        {
+                            //Check if mapping already exists and update to new value if it does
+                            try
+                            {
+                                filledWildcardMappings.Add(filledWildcardEntityType, pair.Value);
+                            }
+                            catch (ArgumentException)
+                            {
+                                Debug.LogWarning("Multiple wildcards found that can match " + receivedEntityTypeString + " and is currently linked to " + filledWildcardMappings[filledWildcardEntityType].name + ". This wildcard will now point to: " + pair.Value.name);
+                                filledWildcardMappings[filledWildcardEntityType] = pair.Value;
+                            }
+                        }
+                    }
+
+                    mappingFound = filledWildcardMappings.TryGetValue(new EntityTypeEditor(receivedEntityType), out entityGameObject);
+                }
+
+                if(mappingFound)
+                {
                     if (entityGameObject)
                     {
                         Vector3 spawnPosition = Vector3.zero;
@@ -161,20 +207,21 @@ namespace GRILLDIS
                             objectDISReceiveComponent.georeferenceScript = this.gameObject.GetComponent<GeoreferenceSystem>();
                         }
 
-                        AddDISEntityToMap(entityID, newGameObject);
+                        AddDISEntityToMap(receivedEntityID, newGameObject);
 
                         return newGameObject;
                     }
                     else
                     {
-                        Debug.LogWarning("Mapping points to a null GameObject for " + markingString + " (" + entityTypeString + ")");
+                        string entityTypeString = PDUUtil.getEntityTypeAsString(entityStatePdu);
+                        Debug.LogWarning("Mapping points to a null GameObject for " + receivedMarkingString + " (" + entityTypeString + ")");
 
                         return null;
                     }
                 }
                 else
                 {
-                    Debug.LogWarning("No mapping found for " + markingSAE);
+                    Debug.LogWarning("No mapping found for " + receivedEntityTypeString);
 
                     return null;
                 }

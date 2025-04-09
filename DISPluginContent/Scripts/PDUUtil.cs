@@ -101,13 +101,13 @@ namespace GRILLDIS
             EntityType entityType = entityStatePdu.EntityType;
 
             StringBuilder sb = new StringBuilder();
-            sb.Append(entityType.Category + DELIMITER_PERIOD);
-            sb.Append(entityType.Country + DELIMITER_PERIOD);
-            sb.Append(entityType.Domain + DELIMITER_PERIOD);
             sb.Append(entityType.EntityKind + DELIMITER_PERIOD);
-            sb.Append(entityType.Extra + DELIMITER_PERIOD);
+            sb.Append(entityType.Domain + DELIMITER_PERIOD);
+            sb.Append(entityType.Country + DELIMITER_PERIOD);
+            sb.Append(entityType.Category + DELIMITER_PERIOD);
+            sb.Append(entityType.Subcategory + DELIMITER_PERIOD);
             sb.Append(entityType.Specific + DELIMITER_PERIOD);
-            sb.Append(entityType.Subcategory);
+            sb.Append(entityType.Extra);
             return sb.ToString();
         }
 
