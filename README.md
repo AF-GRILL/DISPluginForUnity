@@ -21,11 +21,14 @@
 # Implemented DIS PDUs
 
 The GRILL DIS for Unity plugin currently supports the below DIS PDUs:
+- Designator
+- Detonation
+- Electromagnetic Emissions
 - Entity State
 - Entity State Update
-- Remove Entity
 - Fire
-- Detonate
+- Remove Entity
+- Signal
 - Start Resume
 - Stop Freeze
 
@@ -238,8 +241,9 @@ The PDU Sender script has the following settings:
     - Entity Type
 		- This record specifies the kind of entity, the country of design, the domain, the specific identification of the entity, and any extra information necessary for describing the entity.
         - This value should be set on the component and will be used when sending automatic PDU updates.
-    - Entity ID
-		- This record specifies the site ID, application ID, and entity ID fields. They combine to form a unique identifier of the entity in the exercise.
+        - _**NOTE**_: The checkbox to the left of the Entity Type fields has no functionality in the DIS Send component outside of being able to edit the variable. This checkbox is used for Entity Type wildcards and only has functionality when receiving Entity Type info.
+    - Current Entity ID
+		- This record specifies the ID of the associated entity fields. When sending, this can be combined with the Site ID and Application ID stored in the DIS Game Manager to form the unique identifier of the entity in the exercise.
         - This value should be set on the component and will be used when sending automatic PDU updates.
     - Entity Force ID
 		- This field distinguishes the different teams or sides in a DIS exercise.
@@ -330,6 +334,10 @@ The PDU Sender script has the following settings:
         - _**NOTE:**_ Although not required, for proper DIS delegation each game object used here should have a DIS Receive Component script attached to it.
     - Entity Types
         - All desired DIS Enumerations that should point to this game object.
+        - _**NOTE**_: The checkbox to the left of the Entity Type fields represents wildcards.
+            - If the checkbox is enabled, the specific value given will be referenced.
+            - If the checkbox is disabled, the value will be treated as a wildcard.
+            - Ex: The below image would use wildcards for the Specific and Extra fields.
         - _**NOTE**_: If duplicate enumerations are found across multiple entities, an appropriate message is logged and the most recent encountered game object to enumeration mapping is used.
         - _**NOTE**_: If a DIS Enumeration is received on the network and no mapping exists for it, an appropriate message is logged and the packet is ignored.
         - For a breakdown of the individual elements of a DIS Enumeration, refer to the [Naval Postgraduate School's Documentation](http://faculty.nps.edu/brutzman/vrtp/mil/navy/nps/disenumerations/jdbehtmlfiles/pdu/28.htm#:~:text=Description%3A%20The%20type%20of%20entity,necessary%20for%20describing%20the%20entity.).
