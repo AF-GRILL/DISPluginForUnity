@@ -145,6 +145,8 @@ namespace GRILLDIS
             deepCopy.useSpecific_Category = useSpecific_Category;
             deepCopy.subcategory = subcategory;
             deepCopy.useSpecific_Subcategory = useSpecific_Subcategory;
+            deepCopy.specific = specific;
+            deepCopy.useSpecific_Specific = useSpecific_Specific;
             deepCopy.extra = extra;
             deepCopy.useSpecific_Extra = useSpecific_Extra;
 
