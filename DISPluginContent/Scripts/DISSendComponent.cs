@@ -341,6 +341,14 @@ namespace GRILLDIS
 
             newEntityStatePDU.DeadReckoningParameters.OtherParameters = DeadReckoningLibrary.FormOtherParameters(DeadReckoningAlgorithm, newEntityStatePDU.EntityOrientation, newEntityStatePDU.EntityLocation);
 
+            float currentGameTime = Time.time;
+            float totalSeconds = (float)Math.Truncate(currentGameTime);
+            int minutes = ((int)totalSeconds / 60) % 60;
+            int seconds = (int)totalSeconds % 60;
+            int milliseconds = (int)((currentGameTime - Math.Truncate(currentGameTime)) * 1000);
+
+            newEntityStatePDU.Timestamp = new FTimestamp(ETimestampFormat.Relative, minutes, seconds, milliseconds).ToOpenDIS();
+
             return newEntityStatePDU;
         }
 

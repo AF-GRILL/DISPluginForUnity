@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using OpenDis.Dis1998;
 
@@ -101,6 +102,12 @@ namespace GRILLDIS
         SlightDamage,
         ModerateDamage,
         Destroyed
+    };
+
+    public enum ETimestampFormat
+    {
+        Relative,
+	    Absolute
     };
 
     public struct FEastNorthUp
@@ -283,5 +290,51 @@ namespace GRILLDIS
             return RawVal;
         }
 
+    }
+
+    public struct FTimestamp
+    {
+        private static readonly float timeConversion = (float)(3600f / Math.Pow(2, 31));
+
+        //The format that this timestamp is represented in
+        public ETimestampFormat TimestampFormat;
+        //The minutes that have elapsed since the beginning of the current hour
+        public int Minutes;
+        //The seconds that have elapsed since the beginning of the current minute
+        public int Seconds;
+        //The milliseconds that have elapsed since the beginning of the current second
+        public int Milliseconds;
+
+        public FTimestamp(ETimestampFormat Format, int Minutes, int Seconds, int Milliseconds)
+        {
+            this.TimestampFormat = Format;
+            this.Minutes = Minutes;
+            this.Seconds = Seconds;
+            this.Milliseconds = Milliseconds;
+        }
+
+        public FTimestamp(uint Timestamp)
+        {
+            TimestampFormat = (ETimestampFormat)(Timestamp % 2);
+
+            //Take off format for conversion
+            float time = (Timestamp >> 1) * timeConversion;
+            float timeSeconds = (float)Math.Truncate(time);
+            //Format data into minutes, seconds, milliseconds
+            Milliseconds = (int)(time - Math.Truncate(time)) * 1000;
+            Seconds = (int)timeSeconds % 60;
+            Minutes = (int)timeSeconds / 60;
+        }
+
+        public uint ToOpenDIS()
+    	{
+            float timeSeconds = Milliseconds / 1000f + Seconds + Minutes * 60;
+
+            uint timestamp = (uint)(timeSeconds / timeConversion);
+            //Add in timestamp format
+            timestamp = (timestamp << 1) | (uint)TimestampFormat;
+
+		    return timestamp;
+	    }
     }
 }

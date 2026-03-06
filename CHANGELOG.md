@@ -1,5 +1,9 @@
 # Changelog
 
+## Beta 0.11.1
+
+- Add setting of timestamp in FormEntityStatePDU in DISSendComponent
+
 ## Beta 0.11.0
 
 - Add ability to have wildcards for DIS enumerations.
